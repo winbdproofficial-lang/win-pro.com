@@ -4,34 +4,34 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <title>WINBD-PRO</title>
-<link rel="stylesheet" href="style.css?v=20260818-3">
+<link rel="stylesheet" href="style.css?v=20260818-4">
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="#" onclick="show('home');return false"><span class="brand-mark">W</span><span>WINBD<span>-PRO</span></span></a>
-  <nav><button class="nav-active" onclick="show('home')">Home</button><button onclick="show('games')">Games</button><button onclick="show('wallet')">Wallet</button><button onclick="show('profile')">Profile</button><button id="logout" onclick="logout()" hidden>Logout</button></nav>
-  <div class="top-actions"><button class="login-link" onclick="openModal('login')">Login</button><button class="signup-btn" onclick="openModal('register')">Sign Up</button></div>
+  <a class="brand" href="#" onclick="show('home');return false"><img class="brand-logo" src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO"><span>WINBD<span>-PRO</span></span></a>
+  <nav><button class="nav-active" onclick="show('home')">হোম</button><button onclick="show('games')">গেমস</button><button onclick="show('wallet')">ওয়ালেট</button><button onclick="show('profile')">প্রোফাইল</button><button id="logout" onclick="logout()" hidden>লগআউট</button></nav>
+  <div class="top-actions"><button class="login-link" onclick="openModal('login')">লগইন</button><button class="signup-btn" onclick="openModal('register')">রেজিস্টার</button></div>
 </header>
 <main>
 <section id="home" class="page">
   <div class="hero-shell">
     <div class="hero-copy">
-      <div class="eyebrow">WELCOME TO WINBD-PRO</div>
-      <h1>Play. Explore.<br><strong>Enjoy the experience.</strong></h1>
-      <p>একটি modern, fast এবং mobile-friendly entertainment platform preview.</p>
-      <div class="hero-actions"><button class="primary big" onclick="show('games')">Explore Games</button><button class="ghost big" onclick="openModal('register')">Create Account</button></div>
-      <div class="trust-row"><span>⚡ Fast experience</span><span>🔒 Secure account</span><span>📱 Mobile ready</span></div>
+      <div class="eyebrow">WINBD-PRO-তে স্বাগতম</div>
+      <h1>খেলুন। ঘুরে দেখুন।<br><strong>অভিজ্ঞতাটি উপভোগ করুন।</strong></h1>
+      <p>একটি আধুনিক, দ্রুত এবং মোবাইল-ফ্রেন্ডলি WINBD-PRO প্রিভিউ প্ল্যাটফর্ম।</p>
+      <div class="hero-actions"><button class="primary big" onclick="show('games')">গেমস দেখুন</button><button class="ghost big" onclick="openModal('register')">অ্যাকাউন্ট তৈরি করুন</button></div>
+      <div class="trust-row"><span>⚡ দ্রুত অভিজ্ঞতা</span><span>🔒 নিরাপদ অ্যাকাউন্ট</span><span>📱 মোবাইল রেডি</span></div>
     </div>
-    <div class="hero-art"><div class="glow"></div><div class="orb orb1">W</div><div class="orb orb2">+</div><div class="art-card"><span>WINBD-PRO</span><b>LIVE PREVIEW</b><small>Demo environment</small></div></div>
+    <div class="hero-art"><div class="glow"></div><div class="orb orb1">W</div><div class="orb orb2">+</div><div class="art-card"><span>WINBD-PRO</span><b>লাইভ প্রিভিউ</b><small>ডেমো পরিবেশ</small></div></div>
   </div>
-  <div class="section-head"><div><span class="eyebrow">FEATURED</span><h2>Explore the platform</h2></div><span id="health" class="status-pill">Checking…</span></div>
-  <div class="feature-grid"><article class="feature-card feature-main"><div class="feature-icon">🎮</div><div><span>Featured</span><h3>Game Lounge</h3><p>Explore the available demo experience.</p></div><button onclick="show('games')">Open →</button></article><article class="feature-card"><div class="feature-icon">🏆</div><span>Highlights</span><h3>Live Events</h3><p>Coming soon in preview mode.</p></article><article class="feature-card"><div class="feature-icon">🎁</div><span>Rewards</span><h3>Promotions</h3><p>Preview content only.</p></article></div>
+  <div class="section-head"><div><span class="eyebrow">ফিচার্ড</span><h2>প্ল্যাটফর্ম ঘুরে দেখুন</h2></div><span id="health" class="status-pill">চেক করা হচ্ছে…</span></div>
+  <div class="feature-grid"><article class="feature-card feature-main"><div class="feature-icon">🎮</div><div><span>ফিচার্ড</span><h3>গেম লাউঞ্জ</h3><p>উপলভ্য ডেমো অভিজ্ঞতা ঘুরে দেখুন।</p></div><button onclick="show('games')">খুলুন →</button></article><article class="feature-card"><div class="feature-icon">🏆</div><span>হাইলাইট</span><h3>লাইভ ইভেন্ট</h3><p>প্রিভিউ মোডে শিগগির আসছে।</p></article><article class="feature-card"><div class="feature-icon">🎁</div><span>রিওয়ার্ড</span><h3>প্রমোশন</h3><p>শুধু প্রিভিউ কনটেন্ট।</p></article></div>
 </section>
-<section id="games" class="page" hidden><div class="section-head"><div><span class="eyebrow">GAME LOUNGE</span><h2>Choose a category</h2></div></div><div class="game-grid"><article class="game-tile"><div class="tile-art sports">⚽</div><h3>Sports Lounge</h3><p>Demo preview</p><button class="primary" onclick="toast('Demo mode — game action is disabled')">View</button></article><article class="game-tile"><div class="tile-art casino">♠</div><h3>Casino Lounge</h3><p>Demo preview</p><button class="primary" onclick="toast('Demo mode — game action is disabled')">View</button></article><article class="game-tile"><div class="tile-art live">▶</div><h3>Live Lounge</h3><p>Demo preview</p><button class="primary" onclick="toast('Demo mode — game action is disabled')">View</button></article><article class="game-tile"><div class="tile-art arcade">★</div><h3>Arcade</h3><p>Coming soon</p><button class="primary" onclick="toast('Coming soon')">View</button></article></div></section>
-<section id="wallet" class="page" hidden><div class="card"><div class="section-head"><div><span class="eyebrow">ACCOUNT</span><h2>Wallet</h2></div></div><div id="walletData">Login required.</div><div class="forms"><form onsubmit="payment(event,'deposit')"><h3>Deposit intent</h3><input id="depAmount" type="number" min="1" step="0.01" placeholder="Amount" required><select id="depMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">Create test intent</button></form><form onsubmit="payment(event,'withdraw')"><h3>Withdrawal request</h3><input id="wdAmount" type="number" min="1" step="0.01" placeholder="Amount" required><select id="wdMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">Request test withdrawal</button></form></div></div></section>
-<section id="profile" class="page" hidden><div class="card"><span class="eyebrow">ACCOUNT</span><h2>Profile</h2><div id="profileData">Login required.</div></div></section>
+<section id="games" class="page" hidden><div class="section-head"><div><span class="eyebrow">গেম লাউঞ্জ</span><h2>একটি ক্যাটাগরি বেছে নিন</h2></div></div><div class="game-grid"><article class="game-tile"><div class="tile-art sports">⚽</div><h3>স্পোর্টস লাউঞ্জ</h3><p>ডেমো প্রিভিউ</p><button class="primary" onclick="toast('ডেমো মোড — গেম অ্যাকশন বন্ধ আছে')">দেখুন</button></article><article class="game-tile"><div class="tile-art casino">♠</div><h3>ক্যাসিনো লাউঞ্জ</h3><p>ডেমো প্রিভিউ</p><button class="primary" onclick="toast('ডেমো মোড — গেম অ্যাকশন বন্ধ আছে')">দেখুন</button></article><article class="game-tile"><div class="tile-art live">▶</div><h3>লাইভ লাউঞ্জ</h3><p>ডেমো প্রিভিউ</p><button class="primary" onclick="toast('ডেমো মোড — গেম অ্যাকশন বন্ধ আছে')">দেখুন</button></article><article class="game-tile"><div class="tile-art arcade">★</div><h3>আর্কেড</h3><p>শিগগির আসছে</p><button class="primary" onclick="toast('শিগগির আসছে')">দেখুন</button></article></div></section>
+<section id="wallet" class="page" hidden><div class="card"><div class="section-head"><div><span class="eyebrow">অ্যাকাউন্ট</span><h2>ওয়ালেট</h2></div></div><div id="walletData">ওয়ালেট দেখতে আগে লগইন করুন।</div><div class="forms"><form onsubmit="payment(event,'deposit')"><h3>ডিপোজিট প্রিভিউ</h3><input id="depAmount" type="number" min="1" step="0.01" placeholder="পরিমাণ" required><select id="depMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">টেস্ট রিকোয়েস্ট</button></form><form onsubmit="payment(event,'withdraw')"><h3>উইথড্র প্রিভিউ</h3><input id="wdAmount" type="number" min="1" step="0.01" placeholder="পরিমাণ" required><select id="wdMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">টেস্ট রিকোয়েস্ট</button></form></div></div></section>
+<section id="profile" class="page" hidden><div class="card"><span class="eyebrow">অ্যাকাউন্ট</span><h2>প্রোফাইল</h2><div id="profileData">প্রোফাইল দেখতে আগে লগইন করুন।</div></div></section>
 </main>
-<footer><div class="brand"><span class="brand-mark">W</span> WINBD-PRO</div><small>Preview / demo environment</small></footer>
+<footer><div class="brand"><img class="brand-logo" src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO"> WINBD-PRO</div><small>প্রিভিউ / ডেমো পরিবেশ</small></footer>
 <div id="modal" class="modal" hidden><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div><div id="toast"></div>
-<script src="app.js?v=20260818-3"></script>
+<script src="app.js?v=20260818-4"></script>
 </body></html>
