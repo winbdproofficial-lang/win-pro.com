@@ -1,7 +1,7 @@
 require('dotenv').config();
 if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)throw new Error('JWT_SECRET must be set to at least 32 characters.');
 const path=require('path');const express=require('express');const cors=require('cors');const helmet=require('helmet');const rateLimit=require('express-rate-limit');const bcrypt=require('bcryptjs');const {z}=require('zod');const {pool}=require('./db');const {hashToken,signAccess,issueRefresh,revokeRefresh,authRequired}=require('./auth');const {adminRequired,adminLogin,dashboard,listUsers,setUserStatus,listPayments,updatePayment,adjustBalance,auditLogs}=require('./admin');
-const app=express();app.set('trust proxy',process.env.TRUST_PROXY==='true');
+const app=express();app.set('trust proxy',process.env.TRUST_PROXY==='true'?1:false);
 const allowedOrigins=process.env.CORS_ORIGIN?process.env.CORS_ORIGIN.split(',').map(x=>x.trim()).filter(Boolean):true;
 app.use(helmet({crossOriginResourcePolicy:{policy:'cross-origin'}}));app.use(cors({origin:allowedOrigins,credentials:true}));app.use(express.json({limit:'256kb'}));
 app.use(rateLimit({windowMs:60000,limit:180,standardHeaders:true,legacyHeaders:false}));const loginLimiter=rateLimit({windowMs:15*60000,limit:20,standardHeaders:true,legacyHeaders:false});
