@@ -231,17 +231,17 @@ nav button:hover{
 
 /* Logo image inside the big W/orb area */
 .orb1 img{
-  width:165px;
-  height:165px;
-  max-width:75%;
-  max-height:75%;
+  width:190px;
+  height:190px;
+  max-width:82%;
+  max-height:82%;
   object-fit:contain;
   object-position:center;
   display:block;
   margin:0;
   padding:0;
   transform:none;
-  position:static
+  position:static;
 }
 
 .orb2{
