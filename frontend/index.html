@@ -1,1 +1,37 @@
-<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><title>WINBD-PRO</title><link rel="stylesheet" href="style.css?v=20260818-2"></head><body><header><div class="brand">WINBD-PRO</div><nav><button onclick="show('home')">Home</button><button onclick="show('wallet')">Wallet</button><button onclick="show('profile')">Profile</button><button id="logout" onclick="logout()" hidden>Logout</button></nav></header><main><section id="home" class="page"><div class="hero"><div><span class="eyebrow">WINBD-PRO</span><h1>স্বাগতম</h1><p>আপনার অ্যাকাউন্ট, ওয়ালেট এবং পেমেন্ট ইন্টেন্ট নিরাপদভাবে ম্যানেজ করুন।</p><div class="actions"><button class="primary" onclick="openModal('login')">Login</button><button onclick="openModal('register')">Create account</button></div></div><div class="hero-card"><b>API status</b><strong id="health">Checking…</strong><small id="healthDetail">Backend health endpoint</small></div></div><div class="cards"><div class="card"><span>Security</span><b>JWT + bcrypt</b></div><div class="card"><span>Database</span><b>PostgreSQL</b></div><div class="card"><span>Admin</span><b>Role protected</b></div></div></section><section id="wallet" class="page" hidden><div class="card"><h2>Wallet</h2><div id="walletData">Login required.</div><div class="forms"><form onsubmit="payment(event,'deposit')"><h3>Deposit intent</h3><input id="depAmount" type="number" min="1" step="0.01" placeholder="Amount" required><select id="depMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">Create intent</button></form><form onsubmit="payment(event,'withdraw')"><h3>Withdrawal request</h3><input id="wdAmount" type="number" min="1" step="0.01" placeholder="Amount" required><select id="wdMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">Request withdrawal</button></form></div></div></section><section id="profile" class="page" hidden><div class="card"><h2>Profile</h2><div id="profileData">Login required.</div></div></section></main><div id="modal" class="modal" hidden><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div><div id="toast"></div><script src="app.js?v=20260818-2"></script></body></html>
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+<title>WINBD-PRO</title>
+<link rel="stylesheet" href="style.css?v=20260818-3">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" onclick="show('home');return false"><span class="brand-mark">W</span><span>WINBD<span>-PRO</span></span></a>
+  <nav><button class="nav-active" onclick="show('home')">Home</button><button onclick="show('games')">Games</button><button onclick="show('wallet')">Wallet</button><button onclick="show('profile')">Profile</button><button id="logout" onclick="logout()" hidden>Logout</button></nav>
+  <div class="top-actions"><button class="login-link" onclick="openModal('login')">Login</button><button class="signup-btn" onclick="openModal('register')">Sign Up</button></div>
+</header>
+<main>
+<section id="home" class="page">
+  <div class="hero-shell">
+    <div class="hero-copy">
+      <div class="eyebrow">WELCOME TO WINBD-PRO</div>
+      <h1>Play. Explore.<br><strong>Enjoy the experience.</strong></h1>
+      <p>একটি modern, fast এবং mobile-friendly entertainment platform preview.</p>
+      <div class="hero-actions"><button class="primary big" onclick="show('games')">Explore Games</button><button class="ghost big" onclick="openModal('register')">Create Account</button></div>
+      <div class="trust-row"><span>⚡ Fast experience</span><span>🔒 Secure account</span><span>📱 Mobile ready</span></div>
+    </div>
+    <div class="hero-art"><div class="glow"></div><div class="orb orb1">W</div><div class="orb orb2">+</div><div class="art-card"><span>WINBD-PRO</span><b>LIVE PREVIEW</b><small>Demo environment</small></div></div>
+  </div>
+  <div class="section-head"><div><span class="eyebrow">FEATURED</span><h2>Explore the platform</h2></div><span id="health" class="status-pill">Checking…</span></div>
+  <div class="feature-grid"><article class="feature-card feature-main"><div class="feature-icon">🎮</div><div><span>Featured</span><h3>Game Lounge</h3><p>Explore the available demo experience.</p></div><button onclick="show('games')">Open →</button></article><article class="feature-card"><div class="feature-icon">🏆</div><span>Highlights</span><h3>Live Events</h3><p>Coming soon in preview mode.</p></article><article class="feature-card"><div class="feature-icon">🎁</div><span>Rewards</span><h3>Promotions</h3><p>Preview content only.</p></article></div>
+</section>
+<section id="games" class="page" hidden><div class="section-head"><div><span class="eyebrow">GAME LOUNGE</span><h2>Choose a category</h2></div></div><div class="game-grid"><article class="game-tile"><div class="tile-art sports">⚽</div><h3>Sports Lounge</h3><p>Demo preview</p><button class="primary" onclick="toast('Demo mode — game action is disabled')">View</button></article><article class="game-tile"><div class="tile-art casino">♠</div><h3>Casino Lounge</h3><p>Demo preview</p><button class="primary" onclick="toast('Demo mode — game action is disabled')">View</button></article><article class="game-tile"><div class="tile-art live">▶</div><h3>Live Lounge</h3><p>Demo preview</p><button class="primary" onclick="toast('Demo mode — game action is disabled')">View</button></article><article class="game-tile"><div class="tile-art arcade">★</div><h3>Arcade</h3><p>Coming soon</p><button class="primary" onclick="toast('Coming soon')">View</button></article></div></section>
+<section id="wallet" class="page" hidden><div class="card"><div class="section-head"><div><span class="eyebrow">ACCOUNT</span><h2>Wallet</h2></div></div><div id="walletData">Login required.</div><div class="forms"><form onsubmit="payment(event,'deposit')"><h3>Deposit intent</h3><input id="depAmount" type="number" min="1" step="0.01" placeholder="Amount" required><select id="depMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">Create test intent</button></form><form onsubmit="payment(event,'withdraw')"><h3>Withdrawal request</h3><input id="wdAmount" type="number" min="1" step="0.01" placeholder="Amount" required><select id="wdMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">Request test withdrawal</button></form></div></div></section>
+<section id="profile" class="page" hidden><div class="card"><span class="eyebrow">ACCOUNT</span><h2>Profile</h2><div id="profileData">Login required.</div></div></section>
+</main>
+<footer><div class="brand"><span class="brand-mark">W</span> WINBD-PRO</div><small>Preview / demo environment</small></footer>
+<div id="modal" class="modal" hidden><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div><div id="toast"></div>
+<script src="app.js?v=20260818-3"></script>
+</body></html>
