@@ -47,9 +47,41 @@
   window.register = async function(e){
     await originalRegister(e);
     if(isLoggedIn()){
+      syncHeaderActions();
       setTimeout(() => openOnboarding(), 150);
     }
   };
+
+  function syncHeaderActions(){
+    const top=document.querySelector('.top-actions');
+    if(!top) return;
+    const logged=isLoggedIn();
+    const login=document.getElementById('loginBtn');
+    const register=document.getElementById('registerBtn');
+
+    if(login) login.hidden=logged;
+    if(register) register.hidden=logged;
+
+    let account=document.getElementById('authAccountActions');
+    if(!account){
+      account=document.createElement('div');
+      account.id='authAccountActions';
+      account.className='account-actions auth-account-actions';
+      account.innerHTML=`
+        <button type="button" class="deposit-mini" id="headerDepositBtn">＋ ডিপোজিট</button>
+        <button type="button" class="withdraw-mini" id="headerWithdrawBtn">↗ উইথড্র</button>
+        <button type="button" class="profile-mini" id="headerProfileBtn" aria-label="প্রোফাইল">👤</button>
+      `;
+      top.appendChild(account);
+      account.querySelector('#headerDepositBtn').onclick=()=>{ show('wallet'); setTimeout(()=>document.getElementById('depAmount')?.focus(),120); };
+      account.querySelector('#headerWithdrawBtn').onclick=()=>{ show('wallet'); setTimeout(()=>document.getElementById('wdAmount')?.focus(),120); };
+      account.querySelector('#headerProfileBtn').onclick=()=>openProfileSheet();
+    }
+    account.hidden=!logged;
+    account.style.display=logged?'flex':'none';
+
+    top.classList.toggle('is-authenticated',logged);
+  }
 
   function openOnboarding(){
     const modal=document.getElementById('modal');
@@ -90,6 +122,7 @@
       originalCloseModal();
       if(window.toast) toast('প্রোফাইল তথ্য সংরক্ষণ হয়েছে');
       if(window.updateNav) updateNav();
+      syncHeaderActions();
     }catch(err){msg.textContent='Backend-এ সংযোগ করা যাচ্ছে না';}
   };
 
@@ -104,6 +137,16 @@
     .verify-list>div{display:grid;grid-template-columns:1fr auto;gap:5px 12px;padding:12px;border:1px solid #dce7e5;border-radius:10px;background:#f8fbfa}
     .verify-list span{font-size:12px;color:#63736f}
     .verify-list button{grid-column:2;grid-row:1/3}
+    .auth-account-actions{gap:8px!important;align-items:center!important}
+    .auth-account-actions button{white-space:nowrap!important}
+    .auth-account-actions[hidden]{display:none!important}
+    @media(max-width:600px){.auth-account-actions{gap:4px!important}.auth-account-actions button{padding:8px 8px!important;font-size:12px!important}.auth-account-actions .profile-mini{width:36px!important;height:36px!important}}
   `;
   document.head.appendChild(style);
+
+  // app.js initializes before this file. Re-sync after the DOM and auth state are ready.
+  syncHeaderActions();
+  setTimeout(syncHeaderActions,100);
+  setTimeout(syncHeaderActions,500);
+  setInterval(syncHeaderActions,1000);
 })();
