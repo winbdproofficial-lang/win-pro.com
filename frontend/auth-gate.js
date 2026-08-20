@@ -5,6 +5,7 @@
   const originalCloseModal = window.closeModal;
 
   const protectedPages = new Set(['games','wallet','profile','history','promotions','support']);
+  const guestHiddenPages = new Set(['wallet','profile','history','promotions','support']);
 
   function isLoggedIn(){
     return Boolean(localStorage.getItem('winbd_access'));
@@ -52,6 +53,22 @@
     }
   };
 
+  function syncProtectedVisibility(logged){
+    const nav=document.querySelector('.topbar nav');
+    if(nav){
+      nav.querySelectorAll('button').forEach(btn=>{
+        const match=(btn.getAttribute('onclick')||'').match(/show\('([^']+)'\)/);
+        const page=match?.[1];
+        if(page && guestHiddenPages.has(page)) btn.hidden=!logged;
+      });
+    }
+
+    document.querySelectorAll('[onclick*="show(\'wallet\')"]').forEach(btn=>{
+      if(btn.closest('.topbar nav')) return;
+      btn.classList.toggle('guest-hidden-wallet',!logged);
+    });
+  }
+
   function syncHeaderActions(){
     const top=document.querySelector('.top-actions');
     if(!top) return;
@@ -80,6 +97,7 @@
     account.hidden=!logged;
     account.style.display=logged?'flex':'none';
 
+    syncProtectedVisibility(logged);
     top.classList.toggle('is-authenticated',logged);
   }
 
@@ -140,11 +158,18 @@
     .auth-account-actions{gap:8px!important;align-items:center!important}
     .auth-account-actions button{white-space:nowrap!important}
     .auth-account-actions[hidden]{display:none!important}
-    @media(max-width:600px){.auth-account-actions{gap:4px!important}.auth-account-actions button{padding:8px 8px!important;font-size:12px!important}.auth-account-actions .profile-mini{width:36px!important;height:36px!important}}
+    .guest-hidden-wallet{display:none!important}
+    .topbar nav button[hidden]{display:none!important}
+    .modal{overflow:hidden!important}
+    .modal-card{width:min(980px,calc(100vw - 32px))!important;max-width:980px!important;box-sizing:border-box!important;overflow:auto!important;overflow-x:hidden!important}
+    .profile-sheet{width:100%!important;max-width:900px!important;box-sizing:border-box!important;min-width:0!important}
+    .profile-main{min-width:0!important;overflow:hidden!important}
+    .profile-main .secure{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+    @media(max-width:900px){.profile-sheet{grid-template-columns:1fr!important}.profile-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.profile-main .secure{grid-template-columns:1fr!important}}
+    @media(max-width:600px){.auth-account-actions{gap:4px!important}.auth-account-actions button{padding:8px 8px!important;font-size:12px!important}.auth-account-actions .profile-mini{width:36px!important;height:36px!important}.modal-card{width:calc(100vw - 20px)!important}}
   `;
   document.head.appendChild(style);
 
-  // app.js initializes before this file. Re-sync after the DOM and auth state are ready.
   syncHeaderActions();
   setTimeout(syncHeaderActions,100);
   setTimeout(syncHeaderActions,500);
