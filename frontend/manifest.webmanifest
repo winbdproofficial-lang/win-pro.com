@@ -1,0 +1,20 @@
+{
+  "name": "WINBD-PRO",
+  "short_name": "WINBD-PRO",
+  "description": "WINBD-PRO web app",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "lang": "bn",
+  "icons": [
+    {
+      "src": "https://avatars.githubusercontent.com/u/311884454?v=4",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
