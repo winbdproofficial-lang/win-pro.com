@@ -1,4 +1,15 @@
 (() => {
+  const splash=document.createElement('div');
+  splash.id='winbdStartupSplash';
+  splash.innerHTML='<div class="winbd-splash-card"><div class="winbd-splash-content"><div class="winbd-splash-logo">WINBD-PRO</div><div class="winbd-splash-title">WINBD-OFFICIAL</div><div class="winbd-splash-line"></div><div class="winbd-splash-loading">Loading…</div></div></div>';
+  const splashStyle=document.createElement('style');
+  splashStyle.textContent='#winbdStartupSplash{position:fixed;inset:0;z-index:2147483647;background:#031b18;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .5s ease,visibility .5s ease}#winbdStartupSplash.hide{opacity:0;visibility:hidden;pointer-events:none}.winbd-splash-card{width:min(82vw,420px);aspect-ratio:3/4;border-radius:22px;overflow:hidden;position:relative;display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(circle at 50% 35%,#0b796d 0,#063f3a 48%,#031b18 100%);box-shadow:0 20px 70px #000b}.winbd-splash-card:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,#ffffff18,transparent 35%),linear-gradient(180deg,transparent 50%,#000b 100%)}.winbd-splash-content{position:relative;z-index:1;text-align:center;color:#fff;padding:0 20px 42px}.winbd-splash-logo{font-size:clamp(34px,11vw,64px);font-weight:950;letter-spacing:2px;text-shadow:0 5px 20px #000b}.winbd-splash-title{margin-top:8px;font-size:clamp(22px,7vw,40px);font-weight:850}.winbd-splash-line{width:170px;height:4px;background:#e22;border-radius:9px;margin:18px auto}.winbd-splash-loading{font-size:13px;opacity:.82}@media(max-width:480px){.winbd-splash-card{width:88vw;border-radius:18px}}';
+  document.head.appendChild(splashStyle);
+  document.body.prepend(splash);
+  const hideSplash=()=>{splash.classList.add('hide');setTimeout(()=>splash.remove(),600)};
+  window.addEventListener('load',()=>setTimeout(hideSplash,900));
+  setTimeout(hideSplash,4500);
+
   const originalShow = window.show;
   const originalOpenModal = window.openModal;
   const originalRegister = window.register;
@@ -162,7 +173,7 @@
     .topbar nav button[hidden]{display:none!important}
     .modal{overflow:hidden!important}
     .modal-card{width:min(980px,calc(100vw - 32px))!important;max-width:980px!important;box-sizing:border-box!important;overflow:auto!important;overflow-x:hidden!important}
-    .profile-sheet{width:100%!important;max-width:900px!important;box-sizing:border-box!important;min-width:0!important}
+    .profile-sheet{width:100%!important;max-width:900px!important;box-sizing:border-box!important;min-width:0!important;overflow:hidden!important}
     .profile-main{min-width:0!important;overflow:hidden!important}
     .profile-main .secure{grid-template-columns:repeat(2,minmax(0,1fr))!important}
     @media(max-width:900px){.profile-sheet{grid-template-columns:1fr!important}.profile-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.profile-main .secure{grid-template-columns:1fr!important}}
