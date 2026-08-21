@@ -1,16 +1,33 @@
 (() => {
+  const scriptBase = document.currentScript ? new URL('.', document.currentScript.src) : new URL('.', window.location.href);
+  const splashImageUrl = new URL('splash/winbd_splash_3x4.jpg', scriptBase).href;
+
   const splash=document.createElement('div');
   splash.id='winbdStartupSplash';
-  splash.innerHTML='<div class="winbd-splash-card"><img src="splash/winbd_splash_3x4.jpg" alt="WINBD-OFFICIAL splash"></div>';
+  splash.innerHTML='<div class="winbd-splash-card"><img src="'+splashImageUrl+'" alt="WINBD-OFFICIAL splash"></div>';
   const splashStyle=document.createElement('style');
-  splashStyle.textContent='#winbdStartupSplash{position:fixed;inset:0;z-index:2147483647;background:#050000;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s ease}#winbdStartupSplash.hide{opacity:0;visibility:hidden;pointer-events:none}.winbd-splash-card{height:100dvh;width:min(75dvh,100vw);max-width:100vw;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#050000}.winbd-splash-card img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}@media(max-width:600px){.winbd-splash-card{width:100vw;height:100dvh}}';
+  splashStyle.textContent='#winbdStartupSplash{position:fixed;inset:0;z-index:2147483647;background:#050000;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s ease}.winbd-splash-card{height:100dvh;width:min(75dvh,100vw);max-width:100vw;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#050000}.winbd-splash-card img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}@media(max-width:600px){.winbd-splash-card{width:100vw;height:100dvh}}#winbdStartupSplash.hide{opacity:0;visibility:hidden;pointer-events:none}';
   document.head.appendChild(splashStyle);
   document.body.prepend(splash);
+
   const hideSplash=()=>{splash.classList.add('hide');setTimeout(()=>splash.remove(),500)};
   const img=splash.querySelector('img');
-  if(img) img.addEventListener('load',()=>setTimeout(hideSplash,1500),{once:true});
-  window.addEventListener('load',()=>setTimeout(hideSplash,1800),{once:true});
-  setTimeout(hideSplash,5000);
+  let imageLoaded=false;
+  if(img){
+    img.addEventListener('load',()=>{
+      imageLoaded=true;
+      setTimeout(hideSplash,1500);
+    },{once:true});
+    img.addEventListener('error',()=>{
+      // Fallback for deployments where the static root is the repository root.
+      const fallback=new URL('/frontend/splash/winbd_splash_3x4.jpg',window.location.origin).href;
+      if(img.src!==fallback){img.src=fallback;return;}
+      // Never leave users stuck on a broken splash.
+      setTimeout(hideSplash,500);
+    },{once:false});
+  }
+  window.addEventListener('load',()=>setTimeout(()=>{if(!imageLoaded) hideSplash();},2500),{once:true});
+  setTimeout(hideSplash,6000);
 
   const originalShow = window.show;
   const originalOpenModal = window.openModal;
