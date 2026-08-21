@@ -1,11 +1,21 @@
 (() => {
   const splash=document.createElement('div');
   splash.id='winbdStartupSplash';
-  splash.innerHTML='<div class="winbd-splash-card"><img class="winbd-splash-image" src="/splash/winbd_splash_3x4.jpg" alt="WINBD-OFFICIAL"></div>';
+  splash.innerHTML='<div class="winbd-splash-card"><img class="winbd-splash-image" src="https://raw.githubusercontent.com/winbdproofficial-lang/win-pro.com/main/frontend/splash/winbd_splash_3x4.jpg" alt="WINBD-OFFICIAL" referrerpolicy="no-referrer"></div>';
   const splashStyle=document.createElement('style');
-  splashStyle.textContent='#winbdStartupSplash{position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .5s ease,visibility .5s ease}#winbdStartupSplash.hide{opacity:0;visibility:hidden;pointer-events:none}.winbd-splash-card{width:min(100vw,560px);height:min(100vh,747px);aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}.winbd-splash-image{display:block;width:100%;height:100%;object-fit:contain}@media(max-width:600px){.winbd-splash-card{width:100vw;height:100vh}}';
+  splashStyle.textContent='#winbdStartupSplash{position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .35s ease,visibility .35s ease}#winbdStartupSplash.hide{opacity:0;visibility:hidden;pointer-events:none}.winbd-splash-card{width:min(100vw,560px);height:min(100vh,747px);aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}.winbd-splash-image{display:block;width:100%;height:100%;object-fit:contain}.winbd-splash-image[src=""]{display:none}@media(max-width:600px){.winbd-splash-card{width:100vw;height:100vh}.winbd-splash-image{object-fit:cover}}';
   document.head.appendChild(splashStyle);
   document.body.prepend(splash);
+  const splashImage=splash.querySelector('.winbd-splash-image');
+  splashImage.addEventListener('error',()=>{
+    if(!splashImage.dataset.fallback){
+      splashImage.dataset.fallback='1';
+      splashImage.src='/splash/winbd_splash_3x4.jpg';
+    } else if(!splashImage.dataset.fallback2){
+      splashImage.dataset.fallback2='1';
+      splashImage.src='/frontend/splash/winbd_splash_3x4.jpg';
+    }
+  });
   const hideSplash=()=>{splash.classList.add('hide');setTimeout(()=>splash.remove(),600)};
   window.addEventListener('load',()=>setTimeout(hideSplash,1500));
   setTimeout(hideSplash,5000);
