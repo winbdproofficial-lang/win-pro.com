@@ -1,16 +1,259 @@
 <!doctype html>
 <html lang="bn">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"><meta name="theme-color" content="#063f3a"><link rel="manifest" href="manifest.webmanifest"><title>WINBD-PRO</title><link rel="stylesheet" href="style.css?v=20260820-3"></head>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+    <meta name="theme-color" content="#063f3a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <title>WINBD-PRO</title>
+    <link rel="stylesheet" href="style.css?v=20260820-3">
+</head>
 <body>
-<header class="topbar"><button class="menu-btn" onclick="document.body.classList.toggle('sidebar-open')" aria-label="মেনু">☰</button><a class="brand" href="#" onclick="show('home');return false"><img class="brand-logo" src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO"><span>WINBD<span>-PRO</span></span></a><nav><button onclick="show('home')">হোম</button><button onclick="show('games')">গেমস</button><button onclick="show('wallet')">ওয়ালেট</button><button onclick="show('profile')">প্রোফাইল</button><button onclick="show('history')">হিস্টোরি</button><button onclick="show('promotions')">বোনাস</button><button onclick="show('support')">সাপোর্ট</button><button id="logout" onclick="logout()" hidden>লগআউট</button></nav><div class="top-actions"><button id="loginBtn" class="login-link" onclick="openModal('login')">লগইন</button><button id="registerBtn" class="signup-btn" onclick="openModal('register')">রেজিস্টার</button></div></header>
+
+<!-- Startup Splash Screen -->
+<div id="splash-screen">
+    <img src="splash/splash.png" alt="WINBD-PRO" onerror="this.src='splash/splash.jpg'">
+</div>
+
+<header class="topbar">
+    <button class="menu-btn" onclick="document.body.classList.toggle('sidebar-open')" aria-label="মেনু">☰</button>
+    <a class="brand" href="#" onclick="show('home');return false">
+        <img class="brand-logo" src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO">
+        <span>WINBD<span>-PRO</span></span>
+    </a>
+    <nav>
+        <button onclick="show('home')">হোম</button>
+        <button onclick="show('games')">গেমস</button>
+        <button onclick="show('wallet')">ওয়ালেট</button>
+        <button onclick="show('profile')">প্রোফাইল</button>
+        <button onclick="show('history')">হিস্টোরি</button>
+        <button onclick="show('promotions')">বোনাস</button>
+        <button onclick="show('support')">সাপোর্ট</button>
+        <button id="logout" onclick="logout()" hidden>লগআউট</button>
+    </nav>
+    <div class="top-actions">
+        <button id="loginBtn" class="login-link" onclick="openModal('login')">লগইন</button>
+        <button id="registerBtn" class="signup-btn" onclick="openModal('register')">রেজিস্টার</button>
+    </div>
+</header>
+
 <div class="site-layout">
-<aside class="side-menu"><div class="side-title">গেম ক্যাটাগরি</div><button onclick="show('games');setGameFilter('all')">🔥 গরম খেলা</button><button onclick="show('games');setGameFilter('JILI')">🎰 JILI</button><button onclick="show('games');setGameFilter('Super Ace')">🃏 Super Ace</button><button onclick="show('games');setGameFilter('Slots')">🎰 স্লট</button><button onclick="show('games');setGameFilter('Live Casino')">🎥 লাইভ</button><button onclick="show('games');setGameFilter('Sports')">⚽ স্পোর্টস</button><button onclick="show('games');setGameFilter('Fishing')">🎣 ফিশিং</button><button onclick="show('games');setGameFilter('Arcade')">🕹️ আর্কেড</button><button onclick="show('games');setGameFilter('Crash')">💥 ক্র্যাশ</button><button onclick="show('games');setGameFilter('Table Games')">🎲 টেবিল</button><button onclick="show('promotions')">🎁 অফার</button><button onclick="show('support')">🎧 সাপোর্ট</button></aside>
+<aside class="side-menu">
+    <div class="side-title">গেম ক্যাটাগরি</div>
+    <button onclick="show('games');setGameFilter('all')">🔥 গরম খেলা</button>
+    <button onclick="show('games');setGameFilter('JILI')">🎰 JILI</button>
+    <button onclick="show('games');setGameFilter('Super Ace')">🃏 Super Ace</button>
+    <button onclick="show('games');setGameFilter('Slots')">🎰 স্লট</button>
+    <button onclick="show('games');setGameFilter('Live Casino')">🎥 লাইভ</button>
+    <button onclick="show('games');setGameFilter('Sports')">⚽ স্পোর্টস</button>
+    <button onclick="show('games');setGameFilter('Fishing')">🎣 ফিশিং</button>
+    <button onclick="show('games');setGameFilter('Arcade')">🕹️ আর্কেড</button>
+    <button onclick="show('games');setGameFilter('Crash')">💥 ক্র্যাশ</button>
+    <button onclick="show('games');setGameFilter('Table Games')">🎲 টেবিল</button>
+    <button onclick="show('promotions')">🎁 অফার</button>
+    <button onclick="show('support')">🎧 সাপোর্ট</button>
+</aside>
+
 <main class="main-content">
-<section id="home" class="page home-page"><div class="promo-banner"><div><span class="eyebrow">WINBD-PRO</span><h1>আপনার গেমিং জোন</h1><p>সব ক্যাটাগরি, প্রোফাইল, ওয়ালেট ও হিস্টোরি—এক জায়গায়।</p><div class="hero-actions"><button class="primary big" onclick="show('games')">গেমস দেখুন</button><button class="ghost big" onclick="show('wallet')">ওয়ালেট</button></div></div><div class="banner-logo"><img src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO"></div></div><div class="category-strip"><button onclick="show('games');setGameFilter('all')">🔥<span>গরম খেলা</span></button><button onclick="show('games');setGameFilter('JILI')">🎰<span>JILI</span></button><button onclick="show('games');setGameFilter('Super Ace')">🃏<span>Super Ace</span></button><button onclick="show('games');setGameFilter('Slots')">777<span>স্লট</span></button><button onclick="show('games');setGameFilter('Live Casino')">◉<span>লাইভ</span></button><button onclick="show('games');setGameFilter('Sports')">⚽<span>স্পোর্টস</span></button><button onclick="show('games');setGameFilter('Arcade')">🎮<span>ই-স্পোর্টস</span></button><button onclick="show('games');setGameFilter('Fishing')">🎣<span>ফিশিং</span></button><button onclick="show('games');setGameFilter('Table Games')">🎲<span>টেবিল</span></button></div><div class="section-head compact"><div><span class="eyebrow">গেম লাউঞ্জ</span><h2>গরম খেলা</h2></div><button class="more-btn" onclick="show('games')">আরও →</button></div><div id="homeGameGrid" class="game-grid home-game-grid"></div><div class="section-head compact"><div><span class="eyebrow">সবকিছু এক জায়গায়</span><h2>প্ল্যাটফর্ম</h2></div></div><div class="feature-grid"><article class="feature-card feature-main"><div class="feature-icon">🎮</div><div><span>গেম লাউঞ্জ</span><h3>গেম ক্যাটালগ</h3><p>provider/category অনুযায়ী গেম খুঁজুন।</p></div><button onclick="show('games')">খুলুন →</button></article><article class="feature-card"><div class="feature-icon">💳</div><span>অ্যাকাউন্ট</span><h3>ওয়ালেট</h3><p>ব্যালেন্স ও পেমেন্ট তথ্য।</p><button onclick="show('wallet')">দেখুন</button></article><article class="feature-card"><div class="feature-icon">🎁</div><span>রিওয়ার্ড</span><h3>বোনাস</h3><p>অফার ও রিওয়ার্ড তথ্য।</p><button onclick="show('promotions')">দেখুন</button></article></div><div class="home-status"><span>সিস্টেম স্ট্যাটাস</span><b id="health">চেক করা হচ্ছে…</b></div></section>
-<section id="games" class="page" hidden><div class="section-head"><div><span class="eyebrow">গেম লাউঞ্জ</span><h2>গেম ক্যাটাগরি</h2><p class="muted">Provider integration প্রস্তুত না হওয়া পর্যন্ত এখানে demo catalogue দেখানো হবে।</p></div></div><div class="game-toolbar"><input id="gameSearch" oninput="renderGames()" placeholder="গেম বা provider খুঁজুন…"><select id="gameFilter" onchange="renderGames()"><option value="all">সব provider/category</option><option>JILI</option><option>Super Ace</option><option>Aviator</option><option>Slots</option><option>Live Casino</option><option>Sports</option><option>Fishing</option><option>Arcade</option><option>Crash</option><option>Table Games</option></select></div><div id="gameGrid" class="game-grid"></div></section>
-<section id="wallet" class="page" hidden><div class="card"><div class="section-head"><div><span class="eyebrow">অ্যাকাউন্ট</span><h2>ওয়ালেট</h2></div></div><div id="walletData">ওয়ালেট দেখতে আগে লগইন করুন।</div><div class="forms"><form onsubmit="payment(event,'deposit')"><h3>ডিপোজিট রিকোয়েস্ট</h3><input id="depAmount" type="number" min="1" step="0.01" placeholder="পরিমাণ" required><select id="depMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">ডিপোজিট রিকোয়েস্ট</button></form><form onsubmit="payment(event,'withdraw')"><h3>উইথড্র রিকোয়েস্ট</h3><input id="wdAmount" type="number" min="1" step="0.01" placeholder="পরিমাণ" required><select id="wdMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select><button class="primary">উইথড্র রিকোয়েস্ট</button></form></div></div></section>
-<section id="profile" class="page" hidden><div class="dashboard-grid"><div class="card"><span class="eyebrow">ইউজার ড্যাশবোর্ড</span><h2>আমার প্রোফাইল</h2><div id="profileData">প্রোফাইল দেখতে আগে লগইন করুন।</div><div class="dash-actions"><button onclick="show('wallet')">💳 ওয়ালেট</button><button onclick="show('history')">📜 হিস্টোরি</button><button onclick="show('promotions')">🎁 বোনাস</button><button onclick="show('support')">🎧 সাপোর্ট</button></div></div><div class="card"><h3>অ্যাকাউন্ট নিরাপত্তা</h3><form onsubmit="changePassword(event)"><input id="oldPass" type="password" placeholder="বর্তমান পাসওয়ার্ড" required><input id="newPass" type="password" minlength="8" placeholder="নতুন পাসওয়ার্ড" required><button class="primary">পাসওয়ার্ড পরিবর্তন করুন</button></form></div></div><div class="card"><h3>প্রোফাইল আপডেট</h3><form class="forms" onsubmit="saveProfile(event)"><input id="editName" placeholder="নাম"><input id="editEmail" type="email" placeholder="ইমেইল"><input id="editPhone" placeholder="ফোন"><button class="primary">সেভ করুন</button></form></div></section>
-<section id="history" class="page" hidden><div class="card"><div class="section-head"><div><span class="eyebrow">অ্যাকাউন্ট হিস্টোরি</span><h2>লেনদেন ও গেম হিস্টোরি</h2></div></div><div id="historyData">হিস্টোরি দেখতে আগে লগইন করুন।</div><div class="history-placeholder"><h3>বেটিং হিস্টোরি</h3><p>Provider API যুক্ত হলে এখানে bet/round history দেখানো হবে।</p><h3>গেম হিস্টোরি</h3><p>Provider API যুক্ত হলে এখানে launch/round history দেখানো হবে।</p></div></div></section>
-<section id="promotions" class="page" hidden><div class="card"><span class="eyebrow">বোনাস ও প্রমোশন</span><h2>বোনাস ও প্রমোশন</h2><div class="promo-grid"><article><b>ওয়েলকাম বোনাস</b><p>নতুন সদস্যদের জন্য অফার তথ্য।</p><button onclick="toast('অফারটি provider configuration-এর পর সক্রিয় হবে')">বিস্তারিত</button></article><article><b>দৈনিক রিওয়ার্ড</b><p>দৈনিক রিওয়ার্ড তথ্য।</p><button onclick="toast('রিওয়ার্ড কনফিগারেশন বাকি')">বিস্তারিত</button></article><article><b>ভিআইপি প্রোগ্রাম</b><p>VIP level ও সুবিধার জন্য প্রস্তুত section।</p><button onclick="toast('VIP কনফিগারেশন বাকি')">বিস্তারিত</button></article></div></div></section>
-<section id="support" class="page" hidden><div class="card"><span class="eyebrow">সহায়তা কেন্দ্র</span><h2>সাপোর্ট</h2><div class="support-grid"><button onclick="toast('সাপোর্ট চ্যাট শিগগির সংযুক্ত হবে')">💬 লাইভ চ্যাট</button><button onclick="toast('সাপোর্ট টিকিট শিগগির সংযুক্ত হবে')">🎫 সাপোর্ট টিকিট</button><button onclick="toast('FAQ শিগগির যুক্ত হবে')">❓ সাধারণ প্রশ্ন</button><button onclick="toast('অ্যাকাউন্ট কন্ট্রোল সেটিংসে থাকবে')">🛡️ অ্যাকাউন্ট কন্ট্রোল</button></div></div></section>
-</main></div><div class="floating-tools"><button onclick="toast('সাপোর্ট শিগগির সংযুক্ত হবে')">💬</button><button onclick="show('support')">🎧</button><button onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button></div><footer><div class="brand"><img class="brand-logo" src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO"> WINBD-PRO</div><small>WINBD-PRO</small></footer><div id="modal" class="modal" hidden><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div><div id="toast"></div><script src="app.js?v=20260820-3"></script><script src="auth-gate.js?v=20260820-1"></script></body></html>
+<section id="home" class="page home-page">
+    <div class="promo-banner">
+        <div>
+            <span class="eyebrow">WINBD-PRO</span>
+            <h1>আপনার গেমিং জোন</h1>
+            <p>সব ক্যাটাগরি, প্রোফাইল, ওয়ালেট ও হিস্টোরি—এক জায়গায়।</p>
+            <div class="hero-actions">
+                <button class="primary big" onclick="show('games')">গেমস দেখুন</button>
+                <button class="ghost big" onclick="show('wallet')">ওয়ালেট</button>
+            </div>
+        </div>
+        <div class="banner-logo">
+            <img src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO">
+        </div>
+    </div>
+    
+    <div class="category-strip">
+        <button onclick="show('games');setGameFilter('all')">🔥<span>গরম খেলা</span></button>
+        <button onclick="show('games');setGameFilter('JILI')">🎰<span>JILI</span></button>
+        <button onclick="show('games');setGameFilter('Super Ace')">🃏<span>Super Ace</span></button>
+        <button onclick="show('games');setGameFilter('Slots')">777<span>স্লট</span></button>
+        <button onclick="show('games');setGameFilter('Live Casino')">◉<span>লাইভ</span></button>
+        <button onclick="show('games');setGameFilter('Sports')">⚽<span>স্পোর্টস</span></button>
+        <button onclick="show('games');setGameFilter('Arcade')">🎮<span>ই-স্পোর্টস</span></button>
+        <button onclick="show('games');setGameFilter('Fishing')">🎣<span>ফিশিং</span></button>
+        <button onclick="show('games');setGameFilter('Table Games')">🎲<span>টেবিল</span></button>
+    </div>
+
+    <div class="section-head compact">
+        <div><span class="eyebrow">গেম লাউঞ্জ</span><h2>গরম খেলা</h2></div>
+        <button class="more-btn" onclick="show('games')">আরও →</button>
+    </div>
+    
+    <div id="homeGameGrid" class="game-grid home-game-grid"></div>
+
+    <div class="section-head compact">
+        <div><span class="eyebrow">সবকিছু এক জায়গায়</span><h2>প্ল্যাটফর্ম</h2></div>
+    </div>
+
+    <div class="feature-grid">
+        <article class="feature-card feature-main">
+            <div class="feature-icon">🎮</div>
+            <div><span>গেম লাউঞ্জ</span><h3>গেম ক্যাটালগ</h3><p>provider/category অনুযায়ী গেম খুঁজুন।</p></div>
+            <button onclick="show('games')">খুলুন →</button>
+        </article>
+        <article class="feature-card">
+            <div class="feature-icon">💳</div><span>অ্যাকাউন্ট</span><h3>ওয়ালেট</h3><p>ব্যালেন্স ও পেমেন্ট তথ্য।</p>
+            <button onclick="show('wallet')">দেখুন</button>
+        </article>
+        <article class="feature-card">
+            <div class="feature-icon">🎁</div><span>রিওয়ার্ড</span><h3>বোনাস</h3><p>অফার ও রিওয়ার্ড তথ্য।</p>
+            <button onclick="show('promotions')">দেখুন</button>
+        </article>
+    </div>
+
+    <div class="home-status">
+        <span>সিস্টেম স্ট্যাটাস</span><b id="health">চেক করা হচ্ছে…</b>
+    </div>
+</section>
+
+<section id="games" class="page" hidden>
+    <div class="section-head">
+        <div>
+            <span class="eyebrow">গেম লাউঞ্জ</span><h2>গেম ক্যাটাগরি</h2>
+            <p class="muted">Provider integration প্রস্তুত না হওয়া পর্যন্ত এখানে demo catalogue দেখানো হবে।</p>
+        </div>
+    </div>
+    <div class="game-toolbar">
+        <input id="gameSearch" oninput="renderGames()" placeholder="গেম বা provider খুঁজুন…">
+        <select id="gameFilter" onchange="renderGames()">
+            <option value="all">সব provider/category</option>
+            <option>JILI</option>
+            <option>Super Ace</option>
+            <option>Aviator</option>
+            <option>Slots</option>
+            <option>Live Casino</option>
+            <option>Sports</option>
+            <option>Fishing</option>
+            <option>Arcade</option>
+            <option>Crash</option>
+            <option>Table Games</option>
+        </select>
+    </div>
+    <div id="gameGrid" class="game-grid"></div>
+</section>
+
+<section id="wallet" class="page" hidden>
+    <div class="card">
+        <div class="section-head"><div><span class="eyebrow">অ্যাকাউন্ট</span><h2>ওয়ালেট</h2></div></div>
+        <div id="walletData">ওয়ালেট দেখতে আগে লগইন করুন।</div>
+        <div class="forms">
+            <form onsubmit="payment(event,'deposit')">
+                <h3>ডিপোজিট রিকোয়েস্ট</h3>
+                <input id="depAmount" type="number" min="1" step="0.01" placeholder="পরিমাণ" required>
+                <select id="depMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select>
+                <button class="primary">ডিপোজিট রিকোয়েস্ট</button>
+            </form>
+            <form onsubmit="payment(event,'withdraw')">
+                <h3>উইথড্র রিকোয়েস্ট</h3>
+                <input id="wdAmount" type="number" min="1" step="0.01" placeholder="পরিমাণ" required>
+                <select id="wdMethod"><option>bKash</option><option>Nagad</option><option>Rocket</option></select>
+                <button class="primary">উইথড্র রিকোয়েস্ট</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section id="profile" class="page" hidden>
+    <div class="dashboard-grid">
+        <div class="card">
+            <span class="eyebrow">ইউজার ড্যাশবোর্ড</span><h2>আমার প্রোফাইল</h2>
+            <div id="profileData">প্রোফাইল দেখতে আগে লগইন করুন।</div>
+            <div class="dash-actions">
+                <button onclick="show('wallet')">💳 ওয়ালেট</button>
+                <button onclick="show('history')">📜 হিস্টোরি</button>
+                <button onclick="show('promotions')">🎁 বোনাস</button>
+                <button onclick="show('support')">🎧 সাপোর্ট</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>অ্যাকাউন্ট নিরাপত্তা</h3>
+            <form onsubmit="changePassword(event)">
+                <input id="oldPass" type="password" placeholder="বর্তমান পাসওয়ার্ড" required>
+                <input id="newPass" type="password" minlength="8" placeholder="নতুন পাসওয়ার্ড" required>
+                <button class="primary">পাসওয়ার্ড পরিবর্তন করুন</button>
+            </form>
+        </div>
+    </div>
+    <div class="card">
+        <h3>প্রোফাইল আপডেট</h3>
+        <form class="forms" onsubmit="saveProfile(event)">
+            <input id="editName" placeholder="নাম">
+            <input id="editEmail" type="email" placeholder="ইমেইল">
+            <input id="editPhone" placeholder="ফোন">
+            <button class="primary">সেভ করুন</button>
+        </form>
+    </div>
+</section>
+
+<section id="history" class="page" hidden>
+    <div class="card">
+        <div class="section-head"><div><span class="eyebrow">অ্যাকাউন্ট হিস্টোরি</span><h2>লেনদেন ও গেম হিস্টোরি</h2></div></div>
+        <div id="historyData">হিস্টোরি দেখতে আগে লগইন করুন।</div>
+        <div class="history-placeholder">
+            <h3>বেটিং হিস্টোরি</h3><p>Provider API যুক্ত হলে এখানে bet/round history দেখানো হবে।</p>
+            <h3>গেম হিস্টোরি</h3><p>Provider API যুক্ত হলে এখানে launch/round history দেখানো হবে।</p>
+        </div>
+    </div>
+</section>
+
+<section id="promotions" class="page" hidden>
+    <div class="card">
+        <span class="eyebrow">বোনাস ও প্রমোশন</span><h2>বোনাস ও প্রমোশন</h2>
+        <div class="promo-grid">
+            <article><b>ওয়েলকাম বোনাস</b><p>নতুন সদস্যদের জন্য অফার তথ্য।</p><button onclick="toast('অফারটি provider configuration-এর পর সক্রিয় হবে')">বিস্তারিত</button></article>
+            <article><b>দৈনিক রিওয়ার্ড</b><p>দৈনিক রিওয়ার্ড তথ্য।</p><button onclick="toast('রিওয়ার্ড কনফিগারেশন বাকি')">বিস্তারিত</button></article>
+            <article><b>ভিআইপি প্রোগ্রাম</b><p>VIP level ও সুবিধার জন্য প্রস্তুত section।</p><button onclick="toast('VIP কনফিগারেশন বাকি')">বিস্তারিত</button></article>
+        </div>
+    </div>
+</section>
+
+<section id="support" class="page" hidden>
+    <div class="card">
+        <span class="eyebrow">সহায়তা কেন্দ্র</span><h2>সাপোর্ট</h2>
+        <div class="support-grid">
+            <button onclick="toast('সাপোর্ট চ্যাট শিগগির সংযুক্ত হবে')">💬 লাইভ চ্যাট</button>
+            <button onclick="toast('সাপোর্ট টিকিট শিগগির সংযুক্ত হবে')">🎫 সাপোর্ট টিকিট</button>
+            <button onclick="toast('FAQ শিগগির যুক্ত হবে')">❓ সাধারণ প্রশ্ন</button>
+            <button onclick="toast('অ্যাকাউন্ট কন্ট্রোল সেটিংসে থাকবে')">🛡️ অ্যাকাউন্ট কন্ট্রোল</button>
+        </div>
+    </div>
+</section>
+</main>
+</div>
+
+<div class="floating-tools">
+    <button onclick="toast('সাপোর্ট শিগগির সংযুক্ত হবে')">💬</button>
+    <button onclick="show('support')">🎧</button>
+    <button onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+</div>
+
+<footer>
+    <div class="brand">
+        <img class="brand-logo" src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO"> WINBD-PRO
+    </div>
+    <small>WINBD-PRO</small>
+</footer>
+
+<div id="modal" class="modal" hidden>
+    <div class="modal-card">
+        <button class="close" onclick="closeModal()">×</button>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="app.js?v=20260820-3"></script>
+<script src="auth-gate.js?v=20260820-1"></script>
+</body>
+</html>
