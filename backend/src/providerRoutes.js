@@ -2,11 +2,12 @@
 
 /**
  * WINBD provider gateway.
- * The provider credential is kept server-side in WINBD_PROVIDER_ACCESS_TOKEN.
- * Never expose that credential to the browser.
+ * Provider credentials stay server-side and are optional at boot so the site
+ * can remain live while provider credentials are being reissued.
  */
 function providerRoutes(app, { authRequired }) {
   const baseUrl = (process.env.WINBD_PROVIDER_BASE_URL || 'https://betjili365.vip').replace(/\/+$/, '');
+  const hasProviderToken = () => Boolean(String(process.env.WINBD_PROVIDER_ACCESS_TOKEN || '').trim());
 
   async function callProvider(path, { method = 'GET', body, requireProviderToken = false } = {}) {
     const headers = { Accept: 'application/json' };
@@ -14,8 +15,9 @@ function providerRoutes(app, { authRequired }) {
     if (token) headers.Authorization = `Bearer ${token}`;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (requireProviderToken && !token) {
-      const err = new Error('WINBD_PROVIDER_ACCESS_TOKEN is not configured on the server');
+      const err = new Error('Provider launch is temporarily unavailable');
       err.statusCode = 503;
+      err.code = 'PROVIDER_NOT_CONFIGURED';
       throw err;
     }
     const response = await fetch(`${baseUrl}${path}`, {
@@ -35,53 +37,70 @@ function providerRoutes(app, { authRequired }) {
     return data;
   }
 
-  const forward = (handler) => async (req, res) => {
-    try { res.json(await handler(req)); }
-    catch (err) {
-      console.error('Provider API error:', err);
-      res.status(Number(err.statusCode || 502)).json({
-        success: false,
-        message: err.message || 'Provider API request failed',
-        provider: err.provider || undefined
-      });
+  const forward = (handler, fallback) => async (req, res) => {
+    try {
+      // Catalogue calls are intentionally soft-fail: the main site must not
+      // go down merely because provider credentials are temporarily missing.
+      if (!hasProviderToken()) return res.json(fallback());
+      return res.json(await handler(req));
+    } catch (err) {
+      console.error('Provider catalogue error:', err);
+      return res.json(fallback(err));
     }
   };
 
-  // Public catalogue endpoints.
+  const emptyCatalogue = (error) => ({
+    success: true,
+    data: [],
+    providerConfigured: false,
+    providerAvailable: false,
+    message: error ? 'Game service is temporarily unavailable' : 'Game service is being configured'
+  });
+
   app.get('/api/bt/v1/provider/getVendors', forward(req => {
     const qs = req.query?.gameTypes ? `?gameTypes=${encodeURIComponent(req.query.gameTypes)}` : '';
     return callProvider(`/api/bt/v1/provider/getVendors${qs}`);
-  }));
+  }, emptyCatalogue));
 
   app.get('/api/bt/v1/provider/getWebsiteCategory', forward(() =>
     callProvider('/api/bt/v1/provider/getWebsiteCategory')
-  ));
+  , emptyCatalogue));
 
   app.get('/api/bt/v1/provider/getJackpotInfo', forward(() =>
     callProvider('/api/bt/v1/provider/getJackpotInfo')
-  ));
+  , () => ({ success: true, data: { jackpot: 0 }, providerConfigured: false })));
 
   app.post('/api/bt/v1/provider/getGameListByCategory', forward(req =>
     callProvider('/api/bt/v1/provider/getGameListByCategory', { method: 'POST', body: req.body || {} })
-  ));
+  , emptyCatalogue));
 
   app.post('/api/bt/v1/provider/getGameListByKeyWord', forward(req =>
     callProvider('/api/bt/v1/provider/getGameListByKeyWord', { method: 'POST', body: req.body || {} })
-  ));
+  , emptyCatalogue));
 
   app.post('/api/bt/v1/provider/getRecommendGameList', forward(req =>
     callProvider('/api/bt/v1/provider/getRecommendGameList', { method: 'POST', body: req.body || {} })
-  ));
+  , emptyCatalogue));
 
-  // Launch endpoints require the local WINBD account and the provider credential.
+  // Launch endpoints remain protected. Missing provider credentials are
+  // returned as a normal JSON state rather than an unhandled server error.
   const launch = (path, requireToken = true) => async (req, res) => {
     try {
       if (authRequired) {
-        // Reuse the existing WINBD auth middleware before contacting the provider.
         return authRequired(req, res, async () => {
           const body = req.body || {};
           if (body.gameTypeId === undefined || !body.vendorCode || !body.gameCode) {
             return res.status(400).json({ success: false, message: 'gameTypeId, vendorCode and gameCode are required' });
+          }
+          if (requireToken && !hasProviderToken()) {
+            return res.json({
+              success: true,
+              data: null,
+              providerConfigured: false,
+              launchReady: false,
+              status: 'not_configured',
+              message: 'Game service is temporarily unavailable. Please try again later.'
+            });
           }
           const result = await callProvider(path, { method: 'POST', body: {
             gameTypeId: body.gameTypeId,
@@ -105,14 +124,14 @@ function providerRoutes(app, { authRequired }) {
   };
 
   app.post('/api/bt/v1/provider/getGameUrl', launch('/api/bt/v1/provider/getGameUrl', true));
-  app.post('/api/bt/v1/provider/getTrailGameUrl', launch('/api/bt/v1/provider/getTrailGameUrl', false));
+  app.post('/api/bt/v1/provider/getTrailGameUrl', launch('/api/bt/v1/provider/getTrailGameUrl', true));
 
   app.get('/api/bt/v1/provider/status', (req, res) => res.json({
     success: true,
     data: {
       baseUrl,
-      providerTokenConfigured: Boolean(process.env.WINBD_PROVIDER_ACCESS_TOKEN),
-      launchReady: Boolean(process.env.WINBD_PROVIDER_ACCESS_TOKEN)
+      providerTokenConfigured: hasProviderToken(),
+      launchReady: hasProviderToken()
     }
   }));
 }
