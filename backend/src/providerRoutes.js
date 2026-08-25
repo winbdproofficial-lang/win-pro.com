@@ -12,10 +12,9 @@ function setupProviderRoutes(app, { authRequired }) {
         ];
         return res.json({ success: true, games: mockGames, data: mockGames });
     };
-
-    // ২. গেম লঞ্চ রাউট (সকল সম্ভাব্য ফ্রন্টএন্ড স্ট্রাকচারের জন্য)
+// ২. গেম লঞ্চ রাউট (আপনার দেওয়া লিংক সহ)
     const launchGame = async (req, res) => {
-        const demoUrl = 'https://demo.jiligaming.com/'; // আপনার পছন্দের ডেমো গেম লিংক
+        const demoUrl = 'https://betjili365.vip/bd/en';
         
         return res.json({
             success: true,
