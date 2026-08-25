@@ -41,7 +41,6 @@ function setupProviderRoutes(app, { authRequired } = {}) {
 
   // 3. Provider Callbacks
   router.post('/callback', async (req, res) => {
-    // Handling Provider Seamless API Callback Operations (Balance, Debit, Credit)
     return res.json({ status: '000000', message: 'Success' });
   });
 
@@ -49,4 +48,5 @@ function setupProviderRoutes(app, { authRequired } = {}) {
   app.use('/api/callback', router);
 }
 
+// Ensure the module exports the function directly
 module.exports = setupProviderRoutes;
