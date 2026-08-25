@@ -3,42 +3,45 @@ const express = require('express');
 function setupProviderRoutes(app, { authRequired }) {
     const router = express.Router();
 
-    // ১. গেম ক্যাটালগ রাউট (API কল ফেইল করলে ডামি ডাটা পাঠাবে)
-    router.get('/catalogue', async (req, res) => {
-        try {
-            // যদি আসল API না থাকে তবে ফলব্যাক মক ডাটা পাঠাবে
-            throw new Error("Using Mock Fallback Mode");
-        } catch (error) {
-            console.log("Provider API failed or disabled. Using Mock Fallback Games.");
-            
-            const mockGames = [
-                { id: 'jili_01', name: 'Super Ace', provider: 'JILI', category: 'slot', image: '/assets/games/super-ace.png' },
-                { id: 'jili_02', name: 'Fortune Gems', provider: 'JILI', category: 'slot', image: '/assets/games/fortune-gems.png' },
-                { id: 'jili_03', name: 'Circus Joker', provider: 'JILI', category: 'slot', image: '/assets/games/circus-joker.png' }
-            ];
+    // ১. গেম ক্যাটালগ রাউট
+    const getCatalogue = async (req, res) => {
+        const mockGames = [
+            { id: 'jili_01', name: 'Super Ace', provider: 'JILI', category: 'slot', image: '/assets/games/super-ace.png' },
+            { id: 'jili_02', name: 'Fortune Gems', provider: 'JILI', category: 'slot', image: '/assets/games/fortune-gems.png' },
+            { id: 'jili_03', name: 'Circus Joker', provider: 'JILI', category: 'slot', image: '/assets/games/circus-joker.png' }
+        ];
+        return res.json({ success: true, games: mockGames, data: mockGames });
+    };
 
-            return res.json({ success: true, games: mockGames });
-        }
-    });
+    // ২. গেম লঞ্চ রাউট (সকল সম্ভাব্য ফ্রন্টএন্ড স্ট্রাকচারের জন্য)
+    const launchGame = async (req, res) => {
+        const demoUrl = 'https://demo.jiligaming.com/'; // আপনার পছন্দের ডেমো গেম লিংক
+        
+        return res.json({
+            success: true,
+            status: '000000',
+            url: demoUrl,
+            gameUrl: demoUrl,
+            data: {
+                url: demoUrl,
+                gameUrl: demoUrl
+            }
+        });
+    };
 
-    // ২. গেম লঞ্চ রাউট (গেমে ক্লিক করলে ডেমো ইউআরএল পাঠাবে)
-    router.post('/launch', async (req, res) => {
-        try {
-            return res.json({
-                success: true,
-                url: 'https://demo.jiligaming.com/' // ডেমো গেম লিংক
-            });
-        } catch (error) {
-            return res.json({
-                success: false,
-                message: "Unable to launch game in mock mode"
-            });
-        }
-    });
+    // এন্ডপয়েন্ট হ্যান্ডলিং (GET এবং POST উভয় রাউটের জন্য)
+    router.get('/catalogue', getCatalogue);
+    router.post('/catalogue', getCatalogue);
 
-    // এক্সপ্রেস অ্যাপে রাউট মাউন্ট করা
+    router.get('/launch', launchGame);
+    router.post('/launch', launchGame);
+    router.get('/game-url', launchGame);
+    router.post('/game-url', launchGame);
+
+    // অ্যাপ্লিকেশনে রাউট মাউন্ট করা
     app.use('/api/provider', router);
-    app.use('/api/bt/v1/provider', router); // সেফটির জন্য অল্টারনেটিভ এন্ডপয়েন্ট
+    app.use('/api/bt/v1/provider', router);
+    app.use('/api/bt/v1/game', router); // অতিরিক্ত কমন পাথ
 }
 
 module.exports = { providerRoutes: setupProviderRoutes };
