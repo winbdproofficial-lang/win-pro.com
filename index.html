@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WINBD — Game Lobby Demo</title>
+</head>
+<body>
+  <header class="topbar">
+    <button class="menu-btn" aria-label="Menu">☰</button>
+    <div class="brand"><b>WINBD</b><span>Game Lobby</span></div>
+    <div class="search-wrap">
+      <input id="game-search" type="search" placeholder="গেম সার্চ করুন..." autocomplete="off" />
+    </div>
+    <div class="auth">
+      <button class="login-btn">লগইন</button>
+      <button class="signup-btn">নিবন্ধন করুন</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <aside class="side-menu" id="side-menu"></aside>
+    <section class="content">
+      <div class="notice">
+        <strong>🎮 Demo Game Lobby</strong>
+        <span>Provider token না থাকায় এখন শুধু demo mode চলছে। Real game launch এখানে করা হচ্ছে না।</span>
+      </div>
+
+      <nav id="categories" class="categories" aria-label="Game categories"></nav>
+
+      <div class="section-head">
+        <h1 id="section-title">🔥 গরম খেলা</h1>
+        <span id="result-count"></span>
+      </div>
+
+      <section id="game-grid" class="game-grid" aria-live="polite"></section>
+    </section>
+  </main>
+
+  <div id="demo-modal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <button id="modal-close" class="modal-close" aria-label="Close">×</button>
+      <div class="modal-icon">🎮</div>
+      <h2 id="modal-title">Demo Mode</h2>
+      <p>
+        এই game cardটি এখন শুধু demo preview। Provider authorization token
+        পাওয়া গেলে একই card থেকে আপনার Render backend-এর মাধ্যমে real game launch
+        করা যাবে।
+      </p>
+      <button id="modal-ok" class="modal-ok">ঠিক আছে</button>
+    </div>
+  </div>
+</body>
+</html>
