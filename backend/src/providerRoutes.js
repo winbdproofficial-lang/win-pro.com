@@ -39,14 +39,20 @@ function setupProviderRoutes(app, { authRequired } = {}) {
     }
   });
 
-  // 3. Provider Callbacks
+  // 3. Callbacks
   router.post('/callback', async (req, res) => {
     return res.json({ status: '000000', message: 'Success' });
   });
 
-  app.use('/api/provider', router);
-  app.use('/api/callback', router);
+  if (app && typeof app.use === 'function') {
+    app.use('/api/provider', router);
+    app.use('/api/callback', router);
+  }
+
+  return router;
 }
 
-// Ensure the module exports the function directly
+// Export both default and direct function reference to prevent any import errors
 module.exports = setupProviderRoutes;
+module.exports.setupProviderRoutes = setupProviderRoutes;
+module.exports.default = setupProviderRoutes;
