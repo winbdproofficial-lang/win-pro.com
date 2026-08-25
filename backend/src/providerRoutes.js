@@ -3,7 +3,7 @@ const express = require('express');
 function setupProviderRoutes(app, { authRequired }) {
     const router = express.Router();
 
-    // ১. গেম ক্যাটালগ লিস্ট
+    // ১. গেম ক্যাটালগ
     const getCatalogue = async (req, res) => {
         const mockGames = [
             { id: 'jili_01', name: 'Super Ace', provider: 'JILI', category: 'slot', image: '/assets/games/super-ace.png' },
@@ -13,49 +13,42 @@ function setupProviderRoutes(app, { authRequired }) {
         return res.json({ success: true, games: mockGames, data: mockGames });
     };
 
-    // ২. নিজস্ব লোকাল গেম লঞ্চার (অন্য সাইটে রিডাইরেক্ট হবে না)
+    // ২. গেম লঞ্চার (সরাসরি আপনার মূল হোমপেজ লোড করবে, তাই আর আটকাবে না)
     const launchGame = async (req, res) => {
-        // ব্যাকএন্ডের নিজস্ব হোস্ট ইউআরএল অনুযায়ী ইন্টারনাল গেম পেজে পাঠাবে
         const host = req.get('host');
         const protocol = req.protocol;
-        const internalGameUrl = `${protocol}://${host}/admin/index.html`; // আপনার ওয়েবসাইটের ভেতরের পেজ
+        const mainSiteUrl = `${protocol}://${host}/`; // অ্যাডমিন বাদ দিয়ে মূল সাইটে রিডাইরেক্ট করবে
 
         return res.json({
             success: true,
             status: '000000',
-            url: internalGameUrl,
-            gameUrl: internalGameUrl,
+            url: mainSiteUrl,
+            gameUrl: mainSiteUrl,
             data: {
-                url: internalGameUrl,
-                gameUrl: internalGameUrl
+                url: mainSiteUrl,
+                gameUrl: mainSiteUrl
             }
         });
     };
 
-    // ৩. ইন-হাউজ স্পিন সিস্টেম (ব্যাকএন্ড ওয়ালেট থেকে ১০ টাকা কাটা ও র‍্যান্ডম উইন)
+    // ৩. স্পিন লজিক
     router.post('/spin', authRequired, async (req, res) => {
         try {
-            const betAmount = 10; // প্রতি স্পিনে ১০ টাকা কাটবে
-            
-            // র্যান্ডম উইন হিসেব (১ থেকে ৫ এর মধ্যে ৫ উঠলে ৫০ টাকা উইন)
+            const betAmount = 10;
             const isWin = Math.floor(Math.random() * 5) + 1 === 5;
             const winAmount = isWin ? 50 : 0;
 
             return res.json({
                 success: true,
                 message: isWin ? "You Won!" : "Try Again",
-                data: {
-                    bet: betAmount,
-                    win: winAmount,
-                    isWin: isWin
-                }
+                data: { bet: betAmount, win: winAmount, isWin: isWin }
             });
         } catch (error) {
             return res.status(500).json({ success: false, message: "Spin failed" });
         }
     });
 
-    // এন্ডপয়েন্ট রাউটিং মাউন্ট
+    // এন্ডপয়েন্ট ম্যাপিং
     router.get('/catalogue', getCatalogue);
     router.post('/catalogue', getCatalogue);
 
