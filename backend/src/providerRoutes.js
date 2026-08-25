@@ -13,18 +13,19 @@ function setupProviderRoutes(app, { authRequired }) {
         return res.json({ success: true, games: mockGames, data: mockGames });
     };
 
-    // ২. ১০০% ওয়ার্কিং গেম লিঙ্ক (গেম সাইটের ফ্রেমে স্মুথলি চলবে)
+    // ২. নিজস্ব কাস্টম গেম ভিউপয়েন্ট (৪০৪ এরর মুক্ত)
     const launchGame = async (req, res) => {
-        const activeDemoUrl = 'https://html5.gamedistribution.com/rvvAS48/d13411b0581a4dbe920958197aa350ca/index.html';
+        // Embeddable direct slot game canvas URL
+        const directGameUrl = 'https://slot-machine-demo.netlify.app/';
 
         return res.json({
             success: true,
             status: '000000',
-            url: activeDemoUrl,
-            gameUrl: activeDemoUrl,
+            url: directGameUrl,
+            gameUrl: directGameUrl,
             data: {
-                url: activeDemoUrl,
-                gameUrl: activeDemoUrl
+                url: directGameUrl,
+                gameUrl: directGameUrl
             }
         });
     };
