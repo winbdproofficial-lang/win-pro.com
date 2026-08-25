@@ -3,9 +3,11 @@
 const express = require('express');
 const ProviderAdapter = require('./providerAdapter');
 
-function setupProviderRoutes(app, { authRequired } = {}) {
+function setupProviderRoutes(app, options = {}) {
   const router = express.Router();
   const adapter = new ProviderAdapter();
+
+  const authRequired = typeof options === 'function' ? options : options.authRequired;
 
   // 1. Get Game Catalogue
   router.get('/games', async (req, res) => {
@@ -18,7 +20,7 @@ function setupProviderRoutes(app, { authRequired } = {}) {
   });
 
   // 2. Launch Game
-  const launchMiddleware = authRequired || ((req, res, next) => next());
+  const launchMiddleware = typeof authRequired === 'function' ? authRequired : ((req, res, next) => next());
 
   router.post('/launch', launchMiddleware, async (req, res) => {
     try {
@@ -52,7 +54,5 @@ function setupProviderRoutes(app, { authRequired } = {}) {
   return router;
 }
 
-// Export both default and direct function reference to prevent any import errors
 module.exports = setupProviderRoutes;
 module.exports.setupProviderRoutes = setupProviderRoutes;
-module.exports.default = setupProviderRoutes;
