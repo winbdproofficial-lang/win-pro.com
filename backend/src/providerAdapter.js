@@ -1,5 +1,8 @@
 'use strict';
 
+const https = require('https');
+const http = require('http');
+
 class ProviderAdapter {
   constructor(config = {}) {
     this.name = config.name || 'PGSoft';
@@ -14,17 +17,47 @@ class ProviderAdapter {
     return { name: this.name, enabled: this.enabled, configured: Boolean(this.baseUrl && this.apiToken) };
   }
 
+  _makeRequest(url, data) {
+    return new Promise((resolve, reject) => {
+      const parsedUrl = new URL(url);
+      const postData = JSON.stringify(data);
+      const client = parsedUrl.protocol === 'https:' ? https : http;
+
+      const options = {
+        hostname: parsedUrl.hostname,
+        port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = client.request(options, (res) => {
+        let body = '';
+        res.on('data', (chunk) => body += chunk);
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(body));
+          } catch (e) {
+            resolve({ rawBody: body });
+          }
+        });
+      });
+
+      req.on('error', (err) => reject(err));
+      req.write(postData);
+      req.end();
+    });
+  }
+
   async listGames() {
     try {
-      const response = await fetch(`${this.baseUrl}/api/games`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId: this.agentId,
-          apiToken: this.apiToken
-        })
+      const data = await this._makeRequest(`${this.baseUrl}/api/games`, {
+        agentId: this.agentId,
+        apiToken: this.apiToken
       });
-      const data = await response.json();
       return { provider: this.name, games: data.games || [] };
     } catch (error) {
       return { provider: this.name, games: [], error: error.message };
@@ -35,20 +68,14 @@ class ProviderAdapter {
     if (!gameId) throw new Error('gameId is required');
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/launch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId: this.agentId,
-          apiToken: this.apiToken,
-          secretKey: this.secretKey,
-          gameId: gameId,
-          userId: userId || 'guest',
-          returnUrl: returnUrl || 'https://win-pro-com-lgmh.onrender.com'
-        })
+      const data = await this._makeRequest(`${this.baseUrl}/api/launch`, {
+        agentId: this.agentId,
+        apiToken: this.apiToken,
+        secretKey: this.secretKey,
+        gameId: gameId,
+        userId: userId || 'guest',
+        returnUrl: returnUrl || 'https://win-pro-com-lgmh.onrender.com'
       });
-
-      const data = await response.json();
 
       if (data && (data.url || data.gameUrl)) {
         const gameUrl = data.url || data.gameUrl;
