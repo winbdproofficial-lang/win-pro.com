@@ -1,7 +1,5 @@
 'use strict';
 
-const axios = require('axios');
-
 class ProviderAdapter {
   constructor(config = {}) {
     this.name = config.name || 'PGSoft';
@@ -18,11 +16,16 @@ class ProviderAdapter {
 
   async listGames() {
     try {
-      const response = await axios.post(`${this.baseUrl}/api/games`, {
-        agentId: this.agentId,
-        apiToken: this.apiToken
+      const response = await fetch(`${this.baseUrl}/api/games`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: this.agentId,
+          apiToken: this.apiToken
+        })
       });
-      return { provider: this.name, games: response.data.games || [] };
+      const data = await response.json();
+      return { provider: this.name, games: data.games || [] };
     } catch (error) {
       return { provider: this.name, games: [], error: error.message };
     }
@@ -32,21 +35,27 @@ class ProviderAdapter {
     if (!gameId) throw new Error('gameId is required');
 
     try {
-      const response = await axios.post(`${this.baseUrl}/api/launch`, {
-        agentId: this.agentId,
-        apiToken: this.apiToken,
-        secretKey: this.secretKey,
-        gameId: gameId,
-        userId: userId || 'guest',
-        returnUrl: returnUrl || 'https://win-pro-com-lgmh.onrender.com'
+      const response = await fetch(`${this.baseUrl}/api/launch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: this.agentId,
+          apiToken: this.apiToken,
+          secretKey: this.secretKey,
+          gameId: gameId,
+          userId: userId || 'guest',
+          returnUrl: returnUrl || 'https://win-pro-com-lgmh.onrender.com'
+        })
       });
 
-      if (response.data && (response.data.url || response.data.gameUrl)) {
-        const gameUrl = response.data.url || response.data.gameUrl;
+      const data = await response.json();
+
+      if (data && (data.url || data.gameUrl)) {
+        const gameUrl = data.url || data.gameUrl;
         return { success: true, url: gameUrl, gameUrl: gameUrl, data: { url: gameUrl } };
       }
 
-      throw new Error(response.data.message || 'Failed to get game URL');
+      throw new Error(data.message || 'Failed to get game URL');
     } catch (error) {
       throw new Error(`Provider Launch Error: ${error.message}`);
     }
