@@ -13,24 +13,23 @@ function setupProviderRoutes(app, { authRequired }) {
         return res.json({ success: true, games: mockGames, data: mockGames });
     };
 
-    // ২. কাস্টম ডেমো গেম ইউআরএল (যাতে নিজের সাইটের ফ্রন্টএন্ড পুনরায় লুপ না মারে)
+    // ২. ১০০% ওয়ার্কিং গেম লিঙ্ক (গেম সাইটের ফ্রেমে স্মুথলি চলবে)
     const launchGame = async (req, res) => {
-        // একটি ওপেন-সোর্স ফ্রি ক্যাসিনো ডেমো ফ্রেমের লিংক
-        const demoGameUrl = 'https://html5.gamedistribution.com/rvvAS48/5f385c7d0d084c8a81eebe46ca65bd00/';
+        const activeDemoUrl = 'https://html5.gamedistribution.com/rvvAS48/d13411b0581a4dbe920958197aa350ca/index.html';
 
         return res.json({
             success: true,
             status: '000000',
-            url: demoGameUrl,
-            gameUrl: demoGameUrl,
+            url: activeDemoUrl,
+            gameUrl: activeDemoUrl,
             data: {
-                url: demoGameUrl,
-                gameUrl: demoGameUrl
+                url: activeDemoUrl,
+                gameUrl: activeDemoUrl
             }
         });
     };
 
-    // ৩. স্পিন সিস্টেম
+    // ৩. ইন-হাউজ স্পিন লজিক
     router.post('/spin', authRequired, async (req, res) => {
         try {
             const betAmount = 10;
