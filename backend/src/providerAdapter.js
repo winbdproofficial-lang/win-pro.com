@@ -6,15 +6,15 @@ const http = require('http');
 class ProviderAdapter {
   constructor(config = {}) {
     this.name = config.name || 'PGSoft';
-    this.baseUrl = config.baseUrl || process.env.PROVIDER_API_ENDPOINT || 'https://ggapi.loginxgamesapi.com';
-    this.agentId = config.agentId || process.env.PROVIDER_AGENT_ID;
-    this.apiToken = config.apiToken || process.env.PROVIDER_API_TOKEN;
-    this.secretKey = config.secretKey || process.env.PROVIDER_SECRET_KEY;
+    this.baseUrl = config.baseUrl || process.env.WINBD_PROVIDER_BASE_URL || process.env.PROVIDER_API_ENDPOINT || 'https://ggapi.loginxgamesapi.com';
+    this.agentId = config.agentId || process.env.WINBD_PROVIDER_AGENT_ID || process.env.PROVIDER_AGENT_ID;
+    this.apiToken = config.apiToken || process.env.WINBD_PROVIDER_ACCESS_TOKEN || process.env.PROVIDER_API_TOKEN;
+    this.secretKey = config.secretKey || process.env.WINBD_PROVIDER_SECRET_KEY || process.env.PROVIDER_SECRET_KEY;
     this.enabled = Boolean(config.enabled ?? true);
   }
 
   status() {
-    return { name: this.name, enabled: this.enabled, configured: Boolean(this.baseUrl && this.apiToken) };
+    return { name: this.name, enabled: this.enabled, configured: Boolean(this.baseUrl && this.agentId && this.apiToken) };
   }
 
   _makeRequest(url, data) {
@@ -72,14 +72,14 @@ class ProviderAdapter {
         agentId: this.agentId,
         apiToken: this.apiToken,
         secretKey: this.secretKey,
-        gameId: gameId,
+        gameId,
         userId: userId || 'guest',
         returnUrl: returnUrl || 'https://win-pro-com-lgmh.onrender.com'
       });
 
       if (data && (data.url || data.gameUrl)) {
         const gameUrl = data.url || data.gameUrl;
-        return { success: true, url: gameUrl, gameUrl: gameUrl, data: { url: gameUrl } };
+        return { success: true, url: gameUrl, gameUrl, data: { url: gameUrl } };
       }
 
       throw new Error(data.message || 'Failed to get game URL');
