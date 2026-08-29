@@ -1,125 +1,172 @@
-'use strict';
-const https = require('https');
-const http = require('http');
+/**
+ * Provider Adapter for WinBD Gaming Platform
+ * Handles communication with the gaming provider API
+ */
 
 class ProviderAdapter {
-  constructor(config = {}) {
-    this.name = config.name || 'PGSoft';
-    this.baseUrl = config.baseUrl || process.env.WINBD_PROVIDER_BASE_URL || process.env.PROVIDER_API_ENDPOINT || 'https://ggapi.loginxgamesapi.com';
-    this.agentId = config.agentId || process.env.WINBD_PROVIDER_AGENT_ID || process.env.PROVIDER_AGENT_ID;
-    this.apiToken = config.apiToken || process.env.WINBD_PROVIDER_ACCESS_TOKEN || process.env.PROVIDER_API_TOKEN;
-    this.secretKey = config.secretKey || process.env.WINBD_PROVIDER_SECRET_KEY || process.env.PROVIDER_SECRET_KEY;
-    this.enabled = Boolean(config.enabled ?? true);
+  constructor() {
+    // Load configuration from environment variables
+    this.agentId = process.env.WINBD_PROVIDER_AGENT_ID;
+    this.apiToken = process.env.WINBD_PROVIDER_ACCESS_TOKEN;
+    this.baseUrl = process.env.WINBD_PROVIDER_BASE_URL;
+    this.secretKey = process.env.WINBD_PROVIDER_SECRET_KEY;
+    this.callbackUrl = process.env.PROVIDER_CALLBACK_URL;
+
+    // Validate configuration
+    this.isConfigured = !!(this.agentId && this.apiToken && this.baseUrl);
+
+    if (!this.isConfigured) {
+      console.warn(
+        '[providerAdapter] WARNING: Provider not fully configured. Missing env vars:',
+        {
+          WINBD_PROVIDER_AGENT_ID: !!this.agentId,
+          WINBD_PROVIDER_ACCESS_TOKEN: !!this.apiToken,
+          WINBD_PROVIDER_BASE_URL: !!this.baseUrl,
+        }
+      );
+    } else {
+      console.log('[providerAdapter] Provider initialized with:', {
+        agentId: this.agentId,
+        baseUrl: this.baseUrl,
+        callbackUrl: this.callbackUrl,
+      });
+    }
   }
 
-  status() {
+  /**
+   * Get status of provider configuration
+   */
+  getStatus() {
     return {
-      name: this.name,
-      enabled: this.enabled,
-      baseUrl: this.baseUrl,
-      configured: Boolean(this.baseUrl && this.agentId && this.apiToken),
-      // never expose the actual secret values, just whether they're set
-      hasAgentId: Boolean(this.agentId),
-      hasApiToken: Boolean(this.apiToken),
-      hasSecretKey: Boolean(this.secretKey)
+      name: 'winbd',
+      enabled: true,
+      configured: this.isConfigured,
+      hasAgentId: !!this.agentId,
+      hasApiToken: !!this.apiToken,
+      hasSecretKey: !!this.secretKey,
+      baseUrl: this.baseUrl ? 'configured' : 'missing',
     };
   }
 
-  _makeRequest(url, data) {
-    return new Promise((resolve, reject) => {
-      let parsedUrl;
-      try {
-        parsedUrl = new URL(url);
-      } catch (e) {
-        return reject(new Error(`Invalid provider URL: ${url}`));
+  /**
+   * Fetch available games from provider
+   */
+  async getGames() {
+    if (!this.isConfigured) {
+      throw new Error('Provider not configured. Missing required environment variables.');
+    }
+
+    try {
+      const url = `${this.baseUrl}/api/games`;
+      console.log('[providerAdapter] Fetching games from:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiToken}`,
+          'X-Agent-ID': this.agentId,
+        },
+        timeout: 10000,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[providerAdapter] Games fetch failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        throw new Error(`Provider API error: ${response.statusText}`);
       }
-      const postData = JSON.stringify(data);
-      const client = parsedUrl.protocol === 'https:' ? https : http;
-      const options = {
-        hostname: parsedUrl.hostname,
-        port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
-        path: parsedUrl.pathname + parsedUrl.search,
+
+      const data = await response.json();
+      console.log('[providerAdapter] Successfully fetched', data.games?.length || 0, 'games');
+      return data;
+    } catch (error) {
+      console.error('[providerAdapter] Error fetching games:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Launch a specific game for a user
+   */
+  async launchGame(gameId, userId, userName) {
+    if (!this.isConfigured) {
+      throw new Error('Provider not configured. Missing required environment variables.');
+    }
+
+    if (!gameId || !userId) {
+      throw new Error('gameId and userId are required');
+    }
+
+    try {
+      const url = `${this.baseUrl}/api/launch`;
+      const payload = {
+        gameId,
+        agentId: this.agentId,
+        userId: userId.toString(),
+        userName: userName || `user_${userId}`,
+        returnUrl: this.callbackUrl,
+        timestamp: Date.now(),
+      };
+
+      console.log('[providerAdapter] Launching game:', { gameId, userId, url });
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(postData)
+          Authorization: `Bearer ${this.apiToken}`,
+          'X-Agent-ID': this.agentId,
         },
-        timeout: 15000
-      };
-      const req = client.request(options, (res) => {
-        let body = '';
-        res.on('data', (chunk) => (body += chunk));
-        res.on('end', () => {
-          if (res.statusCode >= 400) {
-            return reject(new Error(`Provider responded with HTTP ${res.statusCode}: ${body.slice(0, 300)}`));
-          }
-          try {
-            resolve(JSON.parse(body));
-          } catch (e) {
-            resolve({ rawBody: body });
-          }
+        body: JSON.stringify(payload),
+        timeout: 10000,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[providerAdapter] Game launch failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+          gameId,
+          userId,
         });
-      });
-      req.on('timeout', () => {
-        req.destroy();
-        reject(new Error('Provider request timed out'));
-      });
-      req.on('error', (err) => reject(err));
-      req.write(postData);
-      req.end();
-    });
-  }
-
-  async listGames() {
-    if (!this.baseUrl || !this.agentId || !this.apiToken) {
-      return {
-        provider: this.name,
-        games: [],
-        error: 'Provider not configured: missing baseUrl, agentId, or apiToken env vars'
-      };
-    }
-    try {
-      const data = await this._makeRequest(`${this.baseUrl}/api/games`, {
-        agentId: this.agentId,
-        apiToken: this.apiToken
-      });
-      if (data.error || data.errorMessage) {
-        return { provider: this.name, games: [], error: data.error || data.errorMessage };
+        throw new Error(`Provider API error: ${response.statusText}`);
       }
-      return { provider: this.name, games: data.games || data.data || [] };
-    } catch (error) {
-      console.error('[providerAdapter] listGames failed:', error.message);
-      return { provider: this.name, games: [], error: error.message };
-    }
-  }
 
-  async launchGame({ gameId, vendorCode, gameTypeId, extraData, userId, trial, returnUrl }) {
-    if (!gameId) throw new Error('gameId is required');
-    if (!this.baseUrl || !this.agentId || !this.apiToken) {
-      throw new Error('Provider not configured: missing baseUrl, agentId, or apiToken env vars');
-    }
-    try {
-      const data = await this._makeRequest(`${this.baseUrl}/api/launch`, {
-        agentId: this.agentId,
-        apiToken: this.apiToken,
-        secretKey: this.secretKey,
+      const data = await response.json();
+      console.log('[providerAdapter] Game launched successfully:', { gameId, launchUrl: !!data.launchUrl });
+      return data;
+    } catch (error) {
+      console.error('[providerAdapter] Error launching game:', {
+        error: error.message,
         gameId,
-        vendorCode,
-        gameTypeId,
-        extraData,
-        trial: Boolean(trial),
-        userId: userId || 'guest',
-        returnUrl: returnUrl || 'https://win-pro-com-lgmh.onrender.com'
+        userId,
       });
-      const gameUrl = data && (data.url || data.gameUrl);
-      if (gameUrl) {
-        return { success: true, url: gameUrl, gameUrl, data: { url: gameUrl } };
-      }
-      throw new Error((data && (data.message || data.error)) || 'Provider did not return a game URL');
-    } catch (error) {
-      throw new Error(`Provider Launch Error: ${error.message}`);
+      throw error;
     }
+  }
+
+  /**
+   * Verify provider webhook/callback signature
+   */
+  verifyCallback(payload, signature) {
+    if (!this.secretKey) {
+      console.warn('[providerAdapter] Secret key not configured, skipping signature verification');
+      return true;
+    }
+
+    const crypto = require('crypto');
+    const expectedSignature = crypto
+      .createHmac('sha256', this.secretKey)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+
+    return expectedSignature === signature;
   }
 }
 
-module.exports = ProviderAdapter;
+module.exports = new ProviderAdapter();
