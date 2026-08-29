@@ -1,160 +1,223 @@
 'use strict';
 
+const crypto = require('crypto');
+
 /**
- * Provider Adapter for WinBD Gaming Platform
- * Talks to the real game provider API.
- * NO mock/demo data anywhere — if the provider isn't configured or a call
- * fails, this returns an empty/error result and providerRoutes.js will show
- * "coming soon" on the frontend instead of fake games.
+ * Provider Adapter for WinBD Gaming Platform.
+ * Talks to the real "loginxgamesapi" / gitamus aggregator — one integration
+ * per vendor, sharing the same agentID but a different apiendpoint + apitoken
+ * + secretkey each.
+ *
+ * NO mock/demo data anywhere — if a vendor isn't configured or a call fails,
+ * that vendor's games are simply skipped instead of showing fake games.
  */
+
+const VENDORS = {
+  pragmatic: {
+    vendorCode: 'Pragmatic',
+    agentId: process.env.WINBD_PRAGMATIC_AGENT_ID || 'stagingWinBDBDT',
+    apiToken: process.env.WINBD_PRAGMATIC_API_TOKEN || '9326505b55ee47a6b958673ee8b1ed34',
+    secretKey: process.env.WINBD_PRAGMATIC_SECRET_KEY || '39078552a79849c887a4f5c00324d025',
+    baseUrl: process.env.WINBD_PRAGMATIC_ENDPOINT || 'https://ptapi.loginxgamesapi.com',
+  },
+  pgsoft: {
+    vendorCode: 'PGSoft',
+    agentId: process.env.WINBD_PGSOFT_AGENT_ID || 'stagingWinBDBDT',
+    apiToken: process.env.WINBD_PGSOFT_API_TOKEN || '901a1505b53f4797916f603c8f99543c',
+    secretKey: process.env.WINBD_PGSOFT_SECRET_KEY || '96c81b879a6c4d5496db43db04541eff',
+    baseUrl: process.env.WINBD_PGSOFT_ENDPOINT || 'https://ggapi.loginxgamesapi.com',
+  },
+  amatic: {
+    vendorCode: 'Amatic',
+    agentId: process.env.WINBD_AMATIC_AGENT_ID || 'stagingWinBDBDT',
+    apiToken: process.env.WINBD_AMATIC_API_TOKEN || '7ff46497a6de491bbb88955a50fc661c',
+    secretKey: process.env.WINBD_AMATIC_SECRET_KEY || '0e7e109dda2a4cf3934206f33cf46a84',
+    baseUrl: process.env.WINBD_AMATIC_ENDPOINT || 'https://amapi.loginxgamesapi.com',
+  },
+  amusnet: {
+    vendorCode: 'Amusnet',
+    agentId: process.env.WINBD_AMUSNET_AGENT_ID || 'stagingWinBDBDT',
+    apiToken: process.env.WINBD_AMUSNET_API_TOKEN || 'dd2db47a4eb146db9d983f50f04ae8bb',
+    secretKey: process.env.WINBD_AMUSNET_SECRET_KEY || '840ce08cd21a4358bf7f573d7b672818',
+    baseUrl: process.env.WINBD_AMUSNET_ENDPOINT || 'https://apiang.gitamus.net',
+  },
+};
+
+const CALLBACK_URL = process.env.PROVIDER_CALLBACK_URL || 'https://win-pro-com-lgmh.onrender.com/api/callback';
+
+// NOTE: no hardcoded fallback key here anymore — if a vendor's secretKey is
+// somehow empty, signing with '' will just produce a sign the provider
+// rejects (which is correct/safe behavior, not silently using another
+// vendor's key).
+function sign(secretKey, message) {
+  return crypto.createHmac('sha256', secretKey || '').update(message).digest('hex').toUpperCase();
+}
+
 class ProviderAdapter {
   constructor() {
-    this.agentId = process.env.WINBD_PROVIDER_AGENT_ID || '';
-    this.apiToken = process.env.WINBD_PROVIDER_ACCESS_TOKEN || '';
-    this.baseUrl = (process.env.WINBD_PROVIDER_BASE_URL || '').replace(/\/+$/, '');
-    this.secretKey = process.env.WINBD_PROVIDER_SECRET_KEY || '';
-    this.callbackUrl = process.env.PROVIDER_CALLBACK_URL || '';
+    this.vendors = VENDORS;
+    this.callbackUrl = CALLBACK_URL;
 
-    this.isConfigured = Boolean(this.agentId && this.apiToken && this.baseUrl);
-
-    if (!this.isConfigured) {
-      console.warn('[providerAdapter] NOT configured — missing env vars:', {
-        WINBD_PROVIDER_AGENT_ID: Boolean(this.agentId),
-        WINBD_PROVIDER_ACCESS_TOKEN: Boolean(this.apiToken),
-        WINBD_PROVIDER_BASE_URL: Boolean(this.baseUrl),
-      });
-    } else {
-      console.log('[providerAdapter] Configured with baseUrl:', this.baseUrl);
+    for (const [key, v] of Object.entries(this.vendors)) {
+      const configured = Boolean(v.agentId && v.apiToken && v.baseUrl);
+      if (!configured) {
+        console.warn(`[providerAdapter] ${key} NOT configured — missing agentId/apiToken/baseUrl`);
+      }
+      if (!v.secretKey) {
+        console.warn(`[providerAdapter] ${key} has no secretKey yet — signed requests will be rejected until it's set`);
+      }
     }
   }
 
-  /**
-   * Used by GET /status (debug endpoint)
-   */
   status() {
-    return {
-      name: 'winbd',
-      enabled: true,
-      baseUrl: this.baseUrl || null,
-      configured: this.isConfigured,
-      hasAgentId: Boolean(this.agentId),
-      hasApiToken: Boolean(this.apiToken),
-      hasSecretKey: Boolean(this.secretKey),
-    };
+    const out = {};
+    for (const [key, v] of Object.entries(this.vendors)) {
+      out[key] = {
+        baseUrl: v.baseUrl,
+        hasAgentId: Boolean(v.agentId),
+        hasApiToken: Boolean(v.apiToken),
+        hasSecretKey: Boolean(v.secretKey),
+      };
+    }
+    return { name: 'winbd', enabled: true, vendors: out };
   }
 
   /**
-   * Used by GET /getWebsiteCategory (real game catalogue).
-   * Returns { games: [...] } on success.
-   * Returns { error: true, games: [] } on any failure — never fake games.
+   * Fetches the game list from EVERY configured vendor and merges them.
+   * Returns { games: [...] } — normalizeCatalogue() in providerRoutes.js
+   * expects each item to carry gameCode / vendorCode / name / image at least.
    *
-   * NOTE: endpoint path below (/api/games) is a PLACEHOLDER. Once the real
-   * provider API docs / agent panel are available, update:
-   *   - the path (may not be /api/games)
-   *   - the auth header format (Bearer token vs custom header vs signed request)
-   *   - the response field names used below (raw.games vs raw.data vs raw.list)
+   * NOTE: path "/gamelist" and field names below are based on the general
+   * GitSlotPark-style seamless wallet spec (agentID + sign). Confirm the
+   * exact path/params against your Postman collection per vendor and adjust
+   * if a vendor 400s.
    */
   async listGames() {
-    if (!this.isConfigured) {
-      return { error: true, reason: 'not_configured', games: [] };
-    }
+    const all = [];
 
-    try {
-      const url = `${this.baseUrl}/api/games`; // TODO: confirm real path with provider docs
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiToken}`,
-          'X-Agent-ID': this.agentId,
-        },
-      });
+    await Promise.all(
+      Object.entries(this.vendors).map(async ([key, v]) => {
+        if (!v.agentId || !v.apiToken || !v.baseUrl) return;
 
-      if (!response.ok) {
-        const body = await response.text().catch(() => '');
-        console.error('[providerAdapter] listGames failed:', response.status, response.statusText, body);
-        return { error: true, reason: `http_${response.status}`, games: [] };
-      }
+        try {
+          const payload = {
+            agentID: v.agentId,
+            apiToken: v.apiToken,
+          };
+          payload.sign = sign(v.secretKey, `${v.agentId}`);
 
-      const data = await response.json();
-      const games = data.games || data.data || data.list || [];
-      return { games };
-    } catch (err) {
-      console.error('[providerAdapter] listGames error:', err.message);
-      return { error: true, reason: err.message, games: [] };
-    }
+          const response = await fetch(`${v.baseUrl}/gamelist`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            const body = await response.text().catch(() => '');
+            console.error(`[providerAdapter] ${key} gamelist failed:`, response.status, body);
+            return;
+          }
+
+          const data = await response.json();
+          const errorCode = Number(data.error ?? data.errorCode ?? 0);
+          if (errorCode !== 0) {
+            console.error(`[providerAdapter] ${key} gamelist error code:`, errorCode, data.message);
+            return;
+          }
+
+          const list = data.games || data.data || data.list || [];
+          for (const g of list) {
+            all.push({
+              gameCode: g.gameCode || g.code || g.gameId,
+              vendorCode: v.vendorCode,
+              name: g.gameName || g.name,
+              image: g.image || g.icon || g.thumbnail || '',
+              gameTypeId: g.category || g.type || 'Slots',
+              hasTrialPlay: Boolean(g.demo ?? g.hasTrialPlay ?? false),
+            });
+          }
+        } catch (err) {
+          console.error(`[providerAdapter] ${key} listGames error:`, err.message);
+        }
+      })
+    );
+
+    return { games: all };
   }
 
   /**
-   * Used by POST /getGameUrl and /getTrailGameUrl.
-   * Accepts a single options object (matches how providerRoutes.js calls it).
-   * Returns { url: '...' } on success. Throws on failure (routes.js catches it).
+   * Launches a real (or trial) game for a specific vendor.
+   * `vendorCode` must match one of the VENDORS entries (case-insensitive).
    *
-   * NOTE: endpoint path (/api/launch) and payload field names are PLACEHOLDERS
-   * until the real provider API docs are confirmed.
+   * NOTE: path "/userAuth" and field names are placeholders pending your
+   * Postman collection's exact "Game Launch" request — adjust per vendor if needed.
    */
-  async launchGame({ gameId, vendorCode, gameTypeId, extraData, userId, returnUrl, trial } = {}) {
-    if (!this.isConfigured) {
-      throw new Error('Provider not configured. Missing required environment variables.');
+  async launchGame({ gameId, vendorCode, userId, returnUrl, trial } = {}) {
+    if (!gameId) throw new Error('gameId is required');
+    const v = this.resolveVendor(vendorCode);
+    if (!v) throw new Error(`Unknown or unconfigured vendor: ${vendorCode}`);
+
+    const effectiveUserId = trial ? 'guest' : String(userId || 'guest');
+
+    const payload = {
+      agentID: v.agentId,
+      apiToken: v.apiToken,
+      userID: effectiveUserId,
+      gameCode: gameId,
+      lang: 'en',
+      homeUrl: returnUrl || this.callbackUrl,
+      trial: Boolean(trial),
+    };
+    payload.sign = sign(v.secretKey, `${v.agentId}${effectiveUserId}${gameId}`);
+
+    const response = await fetch(`${v.baseUrl}/userAuth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      console.error('[providerAdapter] launchGame failed:', response.status, body);
+      throw new Error(`Provider API error: ${response.status}`);
     }
-    if (!gameId) {
-      throw new Error('gameId is required');
+
+    const data = await response.json();
+    const errorCode = Number(data.error ?? data.errorCode ?? 0);
+    if (errorCode !== 0) {
+      throw new Error(data.message || `Launch error code ${errorCode}`);
     }
 
-    try {
-      const url = `${this.baseUrl}/api/launch`; // TODO: confirm real path with provider docs
-      const payload = {
-        agentId: this.agentId,
-        gameCode: gameId,
-        vendorCode,
-        gameTypeId,
-        extraData,
-        userId: trial ? 'guest' : String(userId || 'guest'),
-        trial: Boolean(trial),
-        returnUrl: returnUrl || this.callbackUrl,
-        timestamp: Date.now(),
-      };
+    const gameUrl = data.url || data.gameUrl || data.launchUrl || data.data?.url;
+    if (!gameUrl) throw new Error('Provider response did not include a game URL');
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiToken}`,
-          'X-Agent-ID': this.agentId,
-        },
-        body: JSON.stringify(payload),
-      });
+    return { url: gameUrl };
+  }
 
-      if (!response.ok) {
-        const body = await response.text().catch(() => '');
-        console.error('[providerAdapter] launchGame failed:', response.status, response.statusText, body);
-        throw new Error(`Provider API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const gameUrl = data.url || data.gameUrl || data.launchUrl;
-      if (!gameUrl) {
-        throw new Error('Provider response did not include a game URL');
-      }
-      return { url: gameUrl };
-    } catch (err) {
-      console.error('[providerAdapter] launchGame error:', err.message, { gameId, userId });
-      throw err;
-    }
+  resolveVendor(vendorCode) {
+    if (!vendorCode) return null;
+    const lower = String(vendorCode).toLowerCase();
+    return (
+      Object.values(this.vendors).find(
+        (v) => v.vendorCode.toLowerCase() === lower
+      ) || this.vendors[lower] || null
+    );
   }
 
   /**
-   * Verify provider webhook/callback signature (used later once real
-   * callbacks arrive). Safe no-op until PROVIDER_SECRET_KEY is real-checked.
+   * Verifies a callback's HMAC sign. `vendorCode` picks which vendor's
+   * secretKey to check against.
    */
-  verifyCallback(payload, signature) {
-    if (!this.secretKey) {
-      console.warn('[providerAdapter] No secret key configured, skipping signature verification');
-      return true;
+  verifyCallback(vendorCode, message, signature) {
+    const v = this.resolveVendor(vendorCode);
+    if (!v || !v.secretKey) {
+      console.warn(`[providerAdapter] No secretKey for ${vendorCode}, rejecting callback`);
+      return false;
     }
-    const crypto = require('crypto');
-    const expected = crypto.createHmac('sha256', this.secretKey).update(JSON.stringify(payload)).digest('hex');
-    return expected === signature;
+    const expected = sign(v.secretKey, message);
+    const a = Buffer.from(expected);
+    const b = Buffer.from(String(signature || '').toUpperCase());
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
   }
 }
 
