@@ -1,5 +1,4 @@
 'use strict';
-
 const https = require('https');
 const http = require('http');
 
@@ -14,15 +13,28 @@ class ProviderAdapter {
   }
 
   status() {
-    return { name: this.name, enabled: this.enabled, configured: Boolean(this.baseUrl && this.agentId && this.apiToken) };
+    return {
+      name: this.name,
+      enabled: this.enabled,
+      baseUrl: this.baseUrl,
+      configured: Boolean(this.baseUrl && this.agentId && this.apiToken),
+      // never expose the actual secret values, just whether they're set
+      hasAgentId: Boolean(this.agentId),
+      hasApiToken: Boolean(this.apiToken),
+      hasSecretKey: Boolean(this.secretKey)
+    };
   }
 
   _makeRequest(url, data) {
     return new Promise((resolve, reject) => {
-      const parsedUrl = new URL(url);
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(url);
+      } catch (e) {
+        return reject(new Error(`Invalid provider URL: ${url}`));
+      }
       const postData = JSON.stringify(data);
       const client = parsedUrl.protocol === 'https:' ? https : http;
-
       const options = {
         hostname: parsedUrl.hostname,
         port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
@@ -31,13 +43,16 @@ class ProviderAdapter {
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(postData)
-        }
+        },
+        timeout: 15000
       };
-
       const req = client.request(options, (res) => {
         let body = '';
-        res.on('data', (chunk) => body += chunk);
+        res.on('data', (chunk) => (body += chunk));
         res.on('end', () => {
+          if (res.statusCode >= 400) {
+            return reject(new Error(`Provider responded with HTTP ${res.statusCode}: ${body.slice(0, 300)}`));
+          }
           try {
             resolve(JSON.parse(body));
           } catch (e) {
@@ -45,7 +60,10 @@ class ProviderAdapter {
           }
         });
       });
-
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Provider request timed out'));
+      });
       req.on('error', (err) => reject(err));
       req.write(postData);
       req.end();
@@ -53,36 +71,51 @@ class ProviderAdapter {
   }
 
   async listGames() {
+    if (!this.baseUrl || !this.agentId || !this.apiToken) {
+      return {
+        provider: this.name,
+        games: [],
+        error: 'Provider not configured: missing baseUrl, agentId, or apiToken env vars'
+      };
+    }
     try {
       const data = await this._makeRequest(`${this.baseUrl}/api/games`, {
         agentId: this.agentId,
         apiToken: this.apiToken
       });
-      return { provider: this.name, games: data.games || [] };
+      if (data.error || data.errorMessage) {
+        return { provider: this.name, games: [], error: data.error || data.errorMessage };
+      }
+      return { provider: this.name, games: data.games || data.data || [] };
     } catch (error) {
+      console.error('[providerAdapter] listGames failed:', error.message);
       return { provider: this.name, games: [], error: error.message };
     }
   }
 
-  async launchGame({ gameId, userId, returnUrl }) {
+  async launchGame({ gameId, vendorCode, gameTypeId, extraData, userId, trial, returnUrl }) {
     if (!gameId) throw new Error('gameId is required');
-
+    if (!this.baseUrl || !this.agentId || !this.apiToken) {
+      throw new Error('Provider not configured: missing baseUrl, agentId, or apiToken env vars');
+    }
     try {
       const data = await this._makeRequest(`${this.baseUrl}/api/launch`, {
         agentId: this.agentId,
         apiToken: this.apiToken,
         secretKey: this.secretKey,
         gameId,
+        vendorCode,
+        gameTypeId,
+        extraData,
+        trial: Boolean(trial),
         userId: userId || 'guest',
         returnUrl: returnUrl || 'https://win-pro-com-lgmh.onrender.com'
       });
-
-      if (data && (data.url || data.gameUrl)) {
-        const gameUrl = data.url || data.gameUrl;
+      const gameUrl = data && (data.url || data.gameUrl);
+      if (gameUrl) {
         return { success: true, url: gameUrl, gameUrl, data: { url: gameUrl } };
       }
-
-      throw new Error(data.message || 'Failed to get game URL');
+      throw new Error((data && (data.message || data.error)) || 'Provider did not return a game URL');
     } catch (error) {
       throw new Error(`Provider Launch Error: ${error.message}`);
     }
