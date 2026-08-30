@@ -1,4 +1,4 @@
-const CACHE='winbd-pro-shell-v7';
+const CACHE='winbd-pro-shell-v8';
 const SHELL=['/','/index.html','/style.css','/app.js','/auth-gate.js','/manifest.webmanifest'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).catch(()=>{}).then(()=>self.skipWaiting()));
