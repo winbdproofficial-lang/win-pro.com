@@ -164,15 +164,29 @@ async function login(e) {
       body: JSON.stringify({ username, password })
     });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      toast(d.message || 'লগইন ব্যর্থ হয়েছে');
+
+    // IMPORTANT: r.ok only means "HTTP status was 2xx". It does NOT guarantee
+    // the backend actually sent back a usable session. If the backend (or a
+    // proxy/CDN in front of it) returns 200 with a body that doesn't contain
+    // a real accessToken, the old code below would still show "login success"
+    // even though no one is actually logged in. Always verify the token
+    // exists before treating this as a real login.
+    if (!r.ok || !d?.data?.accessToken) {
+      console.error('Login did not return a usable session. Full response:', {
+        status: r.status,
+        ok: r.ok,
+        body: d
+      });
+      toast(d?.message || 'লগইন ব্যর্থ হয়েছে (সার্ভার থেকে সঠিক রেসপন্স আসেনি)');
       return;
     }
+
     setSession(d.data);
     closeModal();
     updateNav();
+    if (typeof syncHeaderActions === 'function') syncHeaderActions();
     toast('সফলভাবে লগইন হয়েছে');
-    if (window.load) window.load(); // reload provider-lobby games so trial/real state refreshes
+    if (typeof window.load === 'function') window.load(); // reload provider-lobby games so trial/real state refreshes
   } catch (err) {
     console.error('login error:', err);
     toast('Backend-এ সংযোগ করা যাচ্ছে না');
@@ -193,13 +207,19 @@ async function register(e) {
       body: JSON.stringify(payload)
     });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      toast(d.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে');
+    if (!r.ok || !d?.data?.accessToken) {
+      console.error('Register did not return a usable session. Full response:', {
+        status: r.status,
+        ok: r.ok,
+        body: d
+      });
+      toast(d?.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে (সার্ভার থেকে সঠিক রেসপন্স আসেনি)');
       return;
     }
     setSession(d.data);
     closeModal();
     updateNav();
+    if (typeof syncHeaderActions === 'function') syncHeaderActions();
     toast('অ্যাকাউন্ট তৈরি হয়েছে');
   } catch (err) {
     console.error('register error:', err);
