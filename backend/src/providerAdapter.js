@@ -43,7 +43,7 @@ const VENDORS = {
   },
 };
 
-const CALLBACK_URL = process.env.PROVIDER_CALLBACK_URL || 'https://win-pro-com-lgmh.onrender.com/api/callback';
+const CALLBACK_URL = process.env.PROVIDER_CALLBACK_URL || 'https://win-proo-server.onrender.com/api/callback';
 
 // NOTE: no hardcoded fallback key here anymore — if a vendor's secretKey is
 // somehow empty, signing with '' will just produce a sign the provider
