@@ -6,6 +6,16 @@
  * both expect to already exist on window.
  */
 
+// ---------- Backend configuration ----------
+// The frontend may be hosted on a different domain than the API server.
+// Keep the backend URL in one place so all API calls reach the new Render service.
+const API_BASE = 'https://win-proo-server.onrender.com';
+
+function apiUrl(path) {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 // ---------- Small helpers ----------
 const $ = (id) => document.getElementById(id);
 
@@ -14,7 +24,7 @@ function escapeHtml(value) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+    .replace(/\"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
 
@@ -70,14 +80,14 @@ async function api(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
-  let res = await fetch(path, { ...opts, headers });
+  let res = await fetch(apiUrl(path), { ...opts, headers });
 
   // Transparently refresh an expired access token once, then retry.
   if (res.status === 401 && refreshToken && !opts._retried) {
     const refreshed = await tryRefreshToken();
     if (refreshed) {
       const retryHeaders = { ...headers, Authorization: `Bearer ${accessToken}` };
-      res = await fetch(path, { ...opts, headers: retryHeaders, _retried: true });
+      res = await fetch(apiUrl(path), { ...opts, headers: retryHeaders, _retried: true });
     }
   }
   return res;
@@ -85,7 +95,7 @@ async function api(path, opts = {}) {
 
 async function tryRefreshToken() {
   try {
-    const r = await fetch('/api/bt/v1/user/refreshToken', {
+    const r = await fetch(apiUrl('/api/bt/v1/user/refreshToken'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken })
@@ -165,12 +175,6 @@ async function login(e) {
     });
     const d = await r.json().catch(() => ({}));
 
-    // IMPORTANT: r.ok only means "HTTP status was 2xx". It does NOT guarantee
-    // the backend actually sent back a usable session. If the backend (or a
-    // proxy/CDN in front of it) returns 200 with a body that doesn't contain
-    // a real accessToken, the old code below would still show "login success"
-    // even though no one is actually logged in. Always verify the token
-    // exists before treating this as a real login.
     if (!r.ok || !d?.data?.accessToken) {
       console.error('Login did not return a usable session. Full response:', {
         status: r.status,
@@ -186,7 +190,7 @@ async function login(e) {
     updateNav();
     if (typeof syncHeaderActions === 'function') syncHeaderActions();
     toast('সফলভাবে লগইন হয়েছে');
-    if (typeof window.load === 'function') window.load(); // reload provider-lobby games so trial/real state refreshes
+    if (typeof window.load === 'function') window.load();
   } catch (err) {
     console.error('login error:', err);
     toast('Backend-এ সংযোগ করা যাচ্ছে না');
@@ -266,7 +270,6 @@ async function validateSession() {
       currentUser = d.data;
     }
   } catch (err) {
-    // network hiccup: keep the token, don't force a logout
     console.warn('validateSession network error:', err);
   }
   updateNav();
@@ -276,7 +279,7 @@ async function health() {
   const el = $('health');
   if (!el) return;
   try {
-    const r = await fetch('/api/bt/health');
+    const r = await fetch(apiUrl('/api/bt/health'));
     const d = await r.json();
     el.textContent = d?.status === '000000' ? 'সিস্টেম সচল ✅' : 'সিস্টেম সমস্যা';
   } catch (err) {
