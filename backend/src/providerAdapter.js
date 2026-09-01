@@ -6,42 +6,17 @@ const crypto = require('crypto');
  * Provider Adapter for WinBD Gaming Platform — PRODUCTION CONFIGURATION.
  * 
  * SECURITY: All credentials are read ONLY from environment variables.
- * NO hardcoded fallback credentials. If a required credential is missing,
- * the application will fail at startup with a clear error message.
  * 
- * Required environment variables per vendor:
+ * Provider configuration is OPTIONAL. If credentials are not provided,
+ * those vendors will be skipped gracefully (their games won't appear,
+ * but the application continues running).
+ * 
+ * Optional environment variables per vendor:
  * - WINBD_PRAGMATIC_AGENT_ID, WINBD_PRAGMATIC_API_TOKEN, WINBD_PRAGMATIC_SECRET_KEY
  * - WINBD_PGSOFT_AGENT_ID, WINBD_PGSOFT_API_TOKEN, WINBD_PGSOFT_SECRET_KEY
  * - WINBD_AMATIC_AGENT_ID, WINBD_AMATIC_API_TOKEN, WINBD_AMATIC_SECRET_KEY
  * - WINBD_AMUSNET_AGENT_ID, WINBD_AMUSNET_API_TOKEN, WINBD_AMUSNET_SECRET_KEY
  */
-
-// Validate that all required production credentials are configured.
-function validateProviderConfig() {
-  const requiredVendors = ['pragmatic', 'pgsoft', 'amatic', 'amusnet'];
-  const requiredFields = ['AGENT_ID', 'API_TOKEN', 'SECRET_KEY'];
-  const missing = [];
-
-  for (const vendor of requiredVendors) {
-    for (const field of requiredFields) {
-      const envVar = `WINBD_${vendor.toUpperCase()}_${field}`;
-      if (!process.env[envVar]) {
-        missing.push(envVar);
-      }
-    }
-  }
-
-  if (missing.length > 0) {
-    throw new Error(
-      `PRODUCTION ERROR: Missing required provider credentials.\n` +
-      `Please configure these environment variables:\n` +
-      missing.map(v => `  - ${v}`).join('\n')
-    );
-  }
-}
-
-// Validate on module load (before ProviderAdapter is instantiated).
-validateProviderConfig();
 
 const VENDORS = {
   pragmatic: {
@@ -85,10 +60,14 @@ class ProviderAdapter {
     this.vendors = VENDORS;
     this.callbackUrl = CALLBACK_URL;
     
-    // All credentials are required and loaded from environment.
-    // Log only configuration status, never log credential values.
+    // Log configuration status
     for (const [key, v] of Object.entries(this.vendors)) {
-      console.log(`[providerAdapter] ${key} configured: ✓ (credentials loaded from environment)`);
+      const configured = Boolean(v.agentId && v.apiToken && v.secretKey);
+      if (configured) {
+        console.log(`[providerAdapter] ${key} ✓ configured`);
+      } else {
+        console.log(`[providerAdapter] ${key} ⚠ not configured (skipped)`);
+      }
     }
   }
 
@@ -97,6 +76,7 @@ class ProviderAdapter {
     for (const [key, v] of Object.entries(this.vendors)) {
       out[key] = {
         baseUrl: v.baseUrl,
+        configured: Boolean(v.agentId && v.apiToken && v.secretKey),
         hasAgentId: Boolean(v.agentId),
         hasApiToken: Boolean(v.apiToken),
         hasSecretKey: Boolean(v.secretKey),
@@ -171,6 +151,7 @@ class ProviderAdapter {
     if (!gameId) throw new Error('gameId is required');
     const v = this.resolveVendor(vendorCode);
     if (!v) throw new Error(`Unknown or unconfigured vendor: ${vendorCode}`);
+    if (!v.agentId || !v.apiToken) throw new Error(`Vendor ${vendorCode} is not configured`);
 
     const effectiveUserId = trial ? 'guest' : String(userId || 'guest');
 
