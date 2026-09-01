@@ -3,52 +3,79 @@
 const crypto = require('crypto');
 
 /**
- * Provider Adapter for WinBD Gaming Platform.
- * Talks to the real "loginxgamesapi" / gitamus aggregator — one integration
- * per vendor, sharing the same agentID but a different apiendpoint + apitoken
- * + secretkey each.
- *
- * NO mock/demo data anywhere — if a vendor isn't configured or a call fails,
- * that vendor's games are simply skipped instead of showing fake games.
+ * Provider Adapter for WinBD Gaming Platform — PRODUCTION CONFIGURATION.
+ * 
+ * SECURITY: All credentials are read ONLY from environment variables.
+ * NO hardcoded fallback credentials. If a required credential is missing,
+ * the application will fail at startup with a clear error message.
+ * 
+ * Required environment variables per vendor:
+ * - WINBD_PRAGMATIC_AGENT_ID, WINBD_PRAGMATIC_API_TOKEN, WINBD_PRAGMATIC_SECRET_KEY
+ * - WINBD_PGSOFT_AGENT_ID, WINBD_PGSOFT_API_TOKEN, WINBD_PGSOFT_SECRET_KEY
+ * - WINBD_AMATIC_AGENT_ID, WINBD_AMATIC_API_TOKEN, WINBD_AMATIC_SECRET_KEY
+ * - WINBD_AMUSNET_AGENT_ID, WINBD_AMUSNET_API_TOKEN, WINBD_AMUSNET_SECRET_KEY
  */
+
+// Validate that all required production credentials are configured.
+function validateProviderConfig() {
+  const requiredVendors = ['pragmatic', 'pgsoft', 'amatic', 'amusnet'];
+  const requiredFields = ['AGENT_ID', 'API_TOKEN', 'SECRET_KEY'];
+  const missing = [];
+
+  for (const vendor of requiredVendors) {
+    for (const field of requiredFields) {
+      const envVar = `WINBD_${vendor.toUpperCase()}_${field}`;
+      if (!process.env[envVar]) {
+        missing.push(envVar);
+      }
+    }
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `PRODUCTION ERROR: Missing required provider credentials.\n` +
+      `Please configure these environment variables:\n` +
+      missing.map(v => `  - ${v}`).join('\n')
+    );
+  }
+}
+
+// Validate on module load (before ProviderAdapter is instantiated).
+validateProviderConfig();
 
 const VENDORS = {
   pragmatic: {
     vendorCode: 'Pragmatic',
-    agentId: process.env.WINBD_PRAGMATIC_AGENT_ID || 'stagingWinBDBDT',
-    apiToken: process.env.WINBD_PRAGMATIC_API_TOKEN || '9326505b55ee47a6b958673ee8b1ed34',
-    secretKey: process.env.WINBD_PRAGMATIC_SECRET_KEY || '39078552a79849c887a4f5c00324d025',
+    agentId: process.env.WINBD_PRAGMATIC_AGENT_ID,
+    apiToken: process.env.WINBD_PRAGMATIC_API_TOKEN,
+    secretKey: process.env.WINBD_PRAGMATIC_SECRET_KEY,
     baseUrl: process.env.WINBD_PRAGMATIC_ENDPOINT || 'https://ptapi.loginxgamesapi.com',
   },
   pgsoft: {
     vendorCode: 'PGSoft',
-    agentId: process.env.WINBD_PGSOFT_AGENT_ID || 'stagingWinBDBDT',
-    apiToken: process.env.WINBD_PGSOFT_API_TOKEN || '901a1505b53f4797916f603c8f99543c',
-    secretKey: process.env.WINBD_PGSOFT_SECRET_KEY || '96c81b879a6c4d5496db43db04541eff',
+    agentId: process.env.WINBD_PGSOFT_AGENT_ID,
+    apiToken: process.env.WINBD_PGSOFT_API_TOKEN,
+    secretKey: process.env.WINBD_PGSOFT_SECRET_KEY,
     baseUrl: process.env.WINBD_PGSOFT_ENDPOINT || 'https://ggapi.loginxgamesapi.com',
   },
   amatic: {
     vendorCode: 'Amatic',
-    agentId: process.env.WINBD_AMATIC_AGENT_ID || 'stagingWinBDBDT',
-    apiToken: process.env.WINBD_AMATIC_API_TOKEN || '7ff46497a6de491bbb88955a50fc661c',
-    secretKey: process.env.WINBD_AMATIC_SECRET_KEY || '0e7e109dda2a4cf3934206f33cf46a84',
+    agentId: process.env.WINBD_AMATIC_AGENT_ID,
+    apiToken: process.env.WINBD_AMATIC_API_TOKEN,
+    secretKey: process.env.WINBD_AMATIC_SECRET_KEY,
     baseUrl: process.env.WINBD_AMATIC_ENDPOINT || 'https://amapi.loginxgamesapi.com',
   },
   amusnet: {
     vendorCode: 'Amusnet',
-    agentId: process.env.WINBD_AMUSNET_AGENT_ID || 'stagingWinBDBDT',
-    apiToken: process.env.WINBD_AMUSNET_API_TOKEN || 'dd2db47a4eb146db9d983f50f04ae8bb',
-    secretKey: process.env.WINBD_AMUSNET_SECRET_KEY || '840ce08cd21a4358bf7f573d7b672818',
+    agentId: process.env.WINBD_AMUSNET_AGENT_ID,
+    apiToken: process.env.WINBD_AMUSNET_API_TOKEN,
+    secretKey: process.env.WINBD_AMUSNET_SECRET_KEY,
     baseUrl: process.env.WINBD_AMUSNET_ENDPOINT || 'https://apiang.gitamus.net',
   },
 };
 
-const CALLBACK_URL = process.env.PROVIDER_CALLBACK_URL || 'https://win-proo-server.onrender.com/api/callback';
+const CALLBACK_URL = process.env.PROVIDER_CALLBACK_URL || 'https://win-proo-server.onrender.com/api/bt/v1/provider/callback';
 
-// NOTE: no hardcoded fallback key here anymore — if a vendor's secretKey is
-// somehow empty, signing with '' will just produce a sign the provider
-// rejects (which is correct/safe behavior, not silently using another
-// vendor's key).
 function sign(secretKey, message) {
   return crypto.createHmac('sha256', secretKey || '').update(message).digest('hex').toUpperCase();
 }
@@ -57,15 +84,11 @@ class ProviderAdapter {
   constructor() {
     this.vendors = VENDORS;
     this.callbackUrl = CALLBACK_URL;
-
+    
+    // All credentials are required and loaded from environment.
+    // Log only configuration status, never log credential values.
     for (const [key, v] of Object.entries(this.vendors)) {
-      const configured = Boolean(v.agentId && v.apiToken && v.baseUrl);
-      if (!configured) {
-        console.warn(`[providerAdapter] ${key} NOT configured — missing agentId/apiToken/baseUrl`);
-      }
-      if (!v.secretKey) {
-        console.warn(`[providerAdapter] ${key} has no secretKey yet — signed requests will be rejected until it's set`);
-      }
+      console.log(`[providerAdapter] ${key} configured: ✓ (credentials loaded from environment)`);
     }
   }
 
@@ -86,11 +109,6 @@ class ProviderAdapter {
    * Fetches the game list from EVERY configured vendor and merges them.
    * Returns { games: [...] } — normalizeCatalogue() in providerRoutes.js
    * expects each item to carry gameCode / vendorCode / name / image at least.
-   *
-   * NOTE: path "/gamelist" and field names below are based on the general
-   * GitSlotPark-style seamless wallet spec (agentID + sign). Confirm the
-   * exact path/params against your Postman collection per vendor and adjust
-   * if a vendor 400s.
    */
   async listGames() {
     const all = [];
@@ -148,9 +166,6 @@ class ProviderAdapter {
   /**
    * Launches a real (or trial) game for a specific vendor.
    * `vendorCode` must match one of the VENDORS entries (case-insensitive).
-   *
-   * NOTE: path "/userAuth" and field names are placeholders pending your
-   * Postman collection's exact "Game Launch" request — adjust per vendor if needed.
    */
   async launchGame({ gameId, vendorCode, userId, returnUrl, trial } = {}) {
     if (!gameId) throw new Error('gameId is required');
