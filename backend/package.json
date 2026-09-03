@@ -5,7 +5,7 @@
   "description": "WINBD-PRO Express + PostgreSQL backend",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/prepareStatic.js && node src/server.js",
+    "start": "node src/migrate.js && node src/prepareStatic.js && node src/server.js",
     "dev": "node --watch src/server.js",
     "migrate": "node src/migrate.js",
     "create-admin": "node src/createAdmin.js"
