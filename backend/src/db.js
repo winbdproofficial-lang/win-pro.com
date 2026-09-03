@@ -3,26 +3,10 @@ const { Pool } = require('pg');
 
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 
-// Render instances may not have an IPv6 route to Supabase's direct database host.
-// If a direct Supabase URL is supplied, transparently use the project's IPv4
-// Session Pooler instead. Existing pooler URLs are left unchanged.
-function normalizeDatabaseUrl(raw) {
-  try {
-    const url = new URL(raw);
-    const directHost = /^db\.[a-z0-9]+\.supabase\.co$/i.test(url.hostname);
-    if (!directHost) return raw;
-
-    const projectRef = url.hostname.slice(3, -'.supabase.co'.length);
-    url.hostname = 'aws-0-ap-south-1.pooler.supabase.com';
-    url.port = '6543';
-    url.username = `postgres.${projectRef}`;
-    return url.toString();
-  } catch (err) {
-    throw new Error('DATABASE_URL is invalid: ' + err.message);
-  }
-}
-
-const connectionString = normalizeDatabaseUrl(process.env.DATABASE_URL);
+// Use the exact PostgreSQL connection URL supplied in DATABASE_URL.
+// `family: 4` asks Node's DNS resolver to prefer IPv4, which is useful on
+// Render when connecting to external managed Postgres providers.
+const connectionString = process.env.DATABASE_URL;
 
 const pool = new Pool({
   connectionString,
