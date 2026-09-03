@@ -8,8 +8,8 @@
 
 // ---------- Backend configuration ----------
 // The frontend may be hosted on a different domain than the API server.
-// Keep the backend URL in one place so all API calls reach the new Render service.
-const API_BASE = 'https://win-proo-server.onrender.com';
+// Keep the backend URL in one place so all API calls reach the current Render service.
+const API_BASE = (window.__WINBD_API_BASE__ || 'https://win-pro-com-ecyg.onrender.com').replace(/\/$/, '');
 
 function apiUrl(path) {
   if (/^https?:\/\//i.test(path)) return path;
@@ -360,38 +360,30 @@ async function loadHistory() {
     el.innerHTML = rows.length
       ? `<table class="history-table"><tr><th>ধরন</th><th>পরিমাণ</th><th>মেথড</th><th>স্ট্যাটাস</th><th>তারিখ</th></tr>${rows
           .map(
-            (p) => `<tr>
-              <td>${escapeHtml(p.direction)}</td>
-              <td>৳${Number(p.amount).toFixed(2)}</td>
-              <td>${escapeHtml(p.method)}</td>
-              <td>${escapeHtml(p.status)}</td>
-              <td>${new Date(p.created_at).toLocaleString('bn-BD')}</td>
-            </tr>`
+            (x) => `<tr><td>${escapeHtml(x.direction)}</td><td>৳${Number(x.amount || 0).toFixed(2)}</td><td>${escapeHtml(x.method)}</td><td>${escapeHtml(x.status)}</td><td>${escapeHtml(x.created_at || x.createdAt || '')}</td></tr>`
           )
           .join('')}</table>`
-      : '<p>কোনো লেনদেন পাওয়া যায়নি।</p>';
+      : '<p>কোনো পেমেন্ট হিস্টোরি নেই।';
   } catch (err) {
     el.textContent = 'Backend-এ সংযোগ করা যাচ্ছে না';
   }
 }
 
 async function saveProfile(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   try {
     const r = await api('/api/bt/v1/user/saveProfile', {
       method: 'POST',
       body: JSON.stringify({
-        fullName: $('editName')?.value,
-        email: $('editEmail')?.value,
-        phone: $('editPhone')?.value
+        fullName: $('editName')?.value || '',
+        email: $('editEmail')?.value || '',
+        phone: $('editPhone')?.value || ''
       })
     });
     const d = await r.json();
-    if (!r.ok) {
-      toast(d.message || 'প্রোফাইল সংরক্ষণ করা যায়নি');
-      return;
-    }
-    toast('প্রোফাইল সংরক্ষণ হয়েছে');
+    if (!r.ok) return toast(d.message || 'প্রোফাইল আপডেট করা যায়নি');
+    currentUser = d.data;
+    toast('প্রোফাইল আপডেট হয়েছে');
     loadProfile();
   } catch (err) {
     toast('Backend-এ সংযোগ করা যাচ্ছে না');
@@ -399,78 +391,63 @@ async function saveProfile(e) {
 }
 
 async function changePassword(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   try {
+    const oldPassword = $('oldPassword')?.value || '';
+    const newPassword = $('newPassword')?.value || '';
     const r = await api('/api/bt/v1/user/changePassword', {
       method: 'POST',
-      body: JSON.stringify({
-        oldPassword: $('oldPass').value,
-        newPassword: $('newPass').value
-      })
+      body: JSON.stringify({ oldPassword, newPassword })
     });
     const d = await r.json();
-    if (!r.ok) {
-      toast(d.message || 'পাসওয়ার্ড পরিবর্তন করা যায়নি');
-      return;
-    }
+    if (!r.ok) return toast(d.message || 'পাসওয়ার্ড পরিবর্তন করা যায়নি');
+    if ($('oldPassword')) $('oldPassword').value = '';
+    if ($('newPassword')) $('newPassword').value = '';
     toast('পাসওয়ার্ড পরিবর্তন হয়েছে');
-    e.target.reset();
   } catch (err) {
     toast('Backend-এ সংযোগ করা যাচ্ছে না');
   }
 }
 
-async function payment(e, type) {
-  e.preventDefault();
-  if (!accessToken) {
-    openModal('login');
-    toast('আগে লগইন করুন');
-    return;
-  }
-  const amountInput = type === 'deposit' ? $('depAmount') : $('wdAmount');
-  const methodInput = type === 'deposit' ? $('depMethod') : $('wdMethod');
+async function payment(e) {
+  if (e) e.preventDefault();
+  if (!accessToken) return openModal('login');
+  const amount = Number($('depositAmount')?.value || 0);
+  const method = $('depositMethod')?.value || 'sslcommerz';
   try {
-    const r = await api(`/api/bt/v1/payment/${type === 'deposit' ? 'deposit' : 'withdraw'}`, {
+    const r = await api('/api/bt/v1/payment/deposit', {
       method: 'POST',
-      body: JSON.stringify({ amount: amountInput.value, method: methodInput.value })
+      body: JSON.stringify({ amount, method })
     });
     const d = await r.json();
-    if (!r.ok) {
-      toast(d.message || 'রিকোয়েস্ট ব্যর্থ হয়েছে');
-      return;
-    }
-    if (d.data?.nextAction?.url) {
-      location.href = d.data.nextAction.url;
-      return;
-    }
-    toast('রিকোয়েস্ট সফলভাবে জমা হয়েছে');
-    e.target.reset();
-    loadWallet();
+    if (!r.ok) return toast(d.message || 'পেমেন্ট শুরু করা যায়নি');
+    const url = d?.data?.nextAction?.url;
+    if (url) window.location.href = url;
+    else toast('পেমেন্ট গেটওয়ে URL পাওয়া যায়নি');
   } catch (err) {
     toast('Backend-এ সংযোগ করা যাচ্ছে না');
   }
 }
 
-// Minor safety net: auth-gate.js wires a header "profile" mini-button to
-// openProfileSheet() but never defines it — fall back to the profile page
-// instead of throwing if that button is clicked before a real one exists.
-if (typeof window.openProfileSheet !== 'function') {
-  window.openProfileSheet = () => show('profile');
-}
+window.api = api;
+window.apiUrl = apiUrl;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.login = login;
+window.register = register;
+window.logout = logout;
+window.changePassword = changePassword;
+window.saveProfile = saveProfile;
+window.payment = payment;
+window.show = show;
+window.validateSession = validateSession;
+window.health = health;
+window.loadProfile = loadProfile;
+window.loadWallet = loadWallet;
+window.loadHistory = loadHistory;
 
-// ---------- Misc UI wiring ----------
-function installUi() {
-  document.querySelectorAll('.topbar nav button, .side-menu button').forEach((btn) => {
-    btn.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
-  });
-}
-
-// ---------- Boot ----------
-installUi();
-updateNav();
-validateSession();
-health();
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(console.error);
-}
+window.addEventListener('DOMContentLoaded', () => {
+  updateNav();
+  validateSession();
+  health();
+});
