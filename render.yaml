@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: win-pro-com-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install --prefix backend
+    startCommand: npm start --prefix backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BRAND_NAME
+        value: WINBD-PRO
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_TOKEN_DAYS
+        value: 30
+      - key: PUBLIC_FRONTEND_URL
+        value: https://win-pro-com-lgmh.onrender.com
+      - key: PUBLIC_API_URL
+        value: https://win-pro-com-ecyg.onrender.com
+      - key: CORS_ORIGIN
+        value: https://win-pro-com-lgmh.onrender.com
+      - key: TRUST_PROXY
+        value: false
