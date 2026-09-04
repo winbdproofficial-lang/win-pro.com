@@ -21,10 +21,10 @@ services:
       - key: REFRESH_TOKEN_DAYS
         value: 30
       - key: PUBLIC_FRONTEND_URL
-        value: https://win-pro-com-lgmh.onrender.com
+        value: https://win-pro-com-ecyg.onrender.com
       - key: PUBLIC_API_URL
         value: https://win-pro-com-ecyg.onrender.com
       - key: CORS_ORIGIN
-        value: https://win-pro-com-lgmh.onrender.com
+        value: https://win-pro-com-ecyg.onrender.com
       - key: TRUST_PROXY
-        value: false
+        value: true
