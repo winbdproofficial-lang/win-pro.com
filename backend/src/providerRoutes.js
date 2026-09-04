@@ -8,24 +8,22 @@ function setupProviderRoutes(app, options = {}) {
   const authRequired = typeof options === 'function' ? options : options.authRequired;
   const launchMiddleware = typeof authRequired === 'function' ? authRequired : ((req, res, next) => next());
 
-  // ---- helper: normalize a raw provider game object into the shape the
-  // frontend's flat() function expects: { displayName, content:{...}, customizeData:{...} }
   function normalizeGame(raw, categoryHint) {
-    const gameCode = raw.gameCode || raw.game_code || raw.code || raw.id;
-    const vendorCode = raw.vendorCode || raw.vendor_code || raw.provider || raw.vendor || 'PGSoft';
-    if (!gameCode) return null;
+    const gameCode = raw.gameCode ?? raw.game_code ?? raw.gameId ?? raw.gameid ?? raw.code ?? raw.id;
+    const vendorCode = raw.vendorCode || raw.vendor_code || raw.vendorId || raw.vendor_id || raw.provider || raw.vendor || 'PGSoft';
+    if (gameCode === undefined || gameCode === null || gameCode === '') return null;
     return {
-      displayName: raw.name || raw.gameName || raw.game_name || raw.displayName || gameCode,
+      displayName: raw.name || raw.gameName || raw.game_name || raw.displayName || String(gameCode),
       content: {
         gameCode,
         vendorCode,
-        vendorId: raw.vendorId || raw.vendor_id || null,
+        vendorId: raw.vendorId || raw.vendor_id || raw.vendorid || null,
         gameTypeId: raw.gameTypeId || raw.game_type_id || raw.type || categoryHint || 'Slots',
         extraData: raw.extraData || raw.extra_data || null,
         hasTrialPlay: Boolean(raw.hasTrialPlay ?? raw.has_trial_play ?? raw.demo ?? false)
       },
       customizeData: {
-        lightIcon: raw.image || raw.icon || raw.thumbnail || raw.imageUrl || raw.image_url || ''
+        lightIcon: raw.image || raw.icon || raw.thumbnail || raw.imageUrl || raw.image_url || raw.iconurl || raw.iconurl1 || raw.iconurl2 || ''
       }
     };
   }
@@ -35,27 +33,23 @@ function setupProviderRoutes(app, options = {}) {
     return rawGames.map((g) => normalizeGame(g, result?.category)).filter(Boolean);
   }
 
-  // 1. Game catalogue -- this is the path the frontend (provider-lobby.js) actually calls
   router.get('/getWebsiteCategory', async (req, res) => {
     try {
       const result = await adapter.listGames();
       const data = normalizeCatalogue(result);
-      return res.json({
-        success: true,
-        providerAvailable: !result.error && data.length > 0,
-        data
-      });
+      return res.json({ success: true, providerAvailable: data.length > 0, data });
     } catch (err) {
       console.error('[provider] getWebsiteCategory failed:', err);
       return res.json({ success: true, providerAvailable: false, data: [] });
     }
   });
 
-  // 2. Launch a real game
   router.post('/getGameUrl', launchMiddleware, async (req, res) => {
     try {
       const { gameCode, vendorCode, gameTypeId, extraData } = req.body || {};
-      const userId = req.user ? req.user.id : req.body.userId;
+      // GitSlotPark requires an alphanumeric userID (4–48 chars). JWT already
+      // contains the stable username, so prefer it over the internal UUID.
+      const userId = req.user?.username || req.user?.sub || req.body.userId;
       const launchResult = await adapter.launchGame({
         gameId: gameCode,
         vendorCode,
@@ -71,7 +65,6 @@ function setupProviderRoutes(app, options = {}) {
     }
   });
 
-  // 3. Launch a trial/demo game
   router.post('/getTrailGameUrl', async (req, res) => {
     try {
       const { gameCode, vendorCode, gameTypeId, extraData } = req.body || {};
@@ -80,7 +73,7 @@ function setupProviderRoutes(app, options = {}) {
         vendorCode,
         gameTypeId,
         extraData,
-        userId: 'guest',
+        userId: req.user?.username || req.body.userId || 'guest',
         trial: true,
         returnUrl: req.body.returnUrl
       });
@@ -91,21 +84,16 @@ function setupProviderRoutes(app, options = {}) {
     }
   });
 
-  // 4. Provider callback / webhook
   router.post('/callback', async (req, res) => {
     return res.json({ status: '000000', message: 'Success' });
   });
 
-  // Debug helper -- hit this yourself in the browser to see exactly what the
-  // provider returned and whether env vars are actually configured.
   router.get('/status', (req, res) => {
     res.json({ success: true, data: adapter.status() });
   });
 
   if (app && typeof app.use === 'function') {
-    // New: the paths the frontend actually calls
     app.use('/api/bt/v1/provider', router);
-    // Keep old mounts too, in case anything else depends on them
     app.use('/api/provider', router);
     app.use('/api/callback', router);
   }
