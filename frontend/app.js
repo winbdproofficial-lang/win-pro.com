@@ -7,9 +7,9 @@
  */
 
 // ---------- Backend configuration ----------
-// The frontend may be hosted on a different domain than the API server.
-// Keep the backend URL in one place so all API calls reach the new Render service.
-const API_BASE = (window.__WINBD_API_BASE__ || 'https://win-pro-com-ecyg.onrender.com').replace(/\/$/, '');
+// The frontend is served by the same Render backend in production.
+// Use same-origin API calls so frontend/backend can never drift apart.
+const API_BASE = (window.__WINBD_API_BASE__ || '').replace(/\/$/, '');
 
 function apiUrl(path) {
   if (/^https?:\/\//i.test(path)) return path;
