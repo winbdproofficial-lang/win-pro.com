@@ -1,21 +1,30 @@
 const fs = require('fs');
 const path = require('path');
 
-// Render may run the backend with `backend/` as its root directory.
-// server.js expects ../admin and ../frontend relative to src/ in that case.
-// When the repository root is used, the destinations already exist and are left untouched.
+// Build the backend's public directory from the repository frontend.
+// Render can run this service with either the repository root or `backend/`
+// as its working/root directory, so try both layouts without guessing.
 const here = __dirname;
-const candidates = {
-  admin: [path.resolve(here, '../admin'), path.resolve(here, '../../admin')],
-  frontend: [path.resolve(here, '../frontend'), path.resolve(here, '../../frontend')]
-};
+const backendDir = path.resolve(here, '..');
+const publicDir = path.join(backendDir, 'public');
 
-for (const [name, sources] of Object.entries(candidates)) {
-  const source = sources.find(p => fs.existsSync(p));
-  if (!source) continue;
-  const target = path.resolve(here, '../../', name);
-  if (path.resolve(source) === path.resolve(target)) continue;
-  fs.mkdirSync(target, { recursive: true });
-  fs.cpSync(source, target, { recursive: true, force: true });
-  console.log(`[prepareStatic] ${name}: ${source} -> ${target}`);
+const frontendCandidates = [
+  path.resolve(here, '../../frontend'), // repo root -> frontend
+  path.resolve(here, '../frontend'),    // backend -> frontend (if copied there)
+  path.resolve(process.cwd(), 'frontend')
+];
+
+const source = frontendCandidates.find((p) =>
+  fs.existsSync(path.join(p, 'index.html'))
+);
+
+if (!source) {
+  throw new Error(
+    `[prepareStatic] frontend/index.html was not found. Checked: ${frontendCandidates.join(', ')}`
+  );
 }
+
+fs.mkdirSync(publicDir, { recursive: true });
+fs.cpSync(source, publicDir, { recursive: true, force: true });
+
+console.log(`[prepareStatic] frontend: ${source} -> ${publicDir}`);
