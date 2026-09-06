@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#063f3a">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <title>WINBD-PRO • Install App</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,"Noto Sans Bengali",sans-serif;background:#021e1c;color:#fff}body{display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 50% 20%,#096b60,#021e1c 65%)}.card{width:min(430px,100%);padding:30px 22px;border:1px solid #1a7e72;border-radius:24px;background:#063f3acc;box-shadow:0 20px 70px #0008;text-align:center}.logo{width:92px;height:92px;border-radius:22px;object-fit:cover;background:#fff;padding:8px;margin:0 auto 18px;display:block}.eyebrow{font-size:12px;letter-spacing:3px;color:#8ee6dc}.card h1{font-size:32px;margin:8px 0}.card p{color:#c5e4e0;line-height:1.6}.install{width:100%;border:0;border-radius:14px;padding:15px 18px;font-size:18px;font-weight:800;background:#f5c400;color:#17210a;cursor:pointer;margin-top:12px}.open{display:block;margin-top:12px;padding:13px;border:1px solid #2d8f84;border-radius:14px;color:#fff;text-decoration:none}.steps{text-align:left;margin-top:22px;padding:16px;border-radius:14px;background:#022f2c}.steps b{display:block;margin-bottom:8px}.steps li{margin:8px 0;color:#d7efec}.status{font-size:12px;color:#8fc5bf;margin-top:14px;min-height:18px}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="https://avatars.githubusercontent.com/u/311884454?v=4" alt="WINBD-PRO">
+    <div class="eyebrow">WINBD-PRO</div>
+    <h1>Install App</h1>
+    <p>মোবাইলে WINBD-PRO-কে app-এর মতো Home Screen-এ রাখতে নিচের Install App button ব্যবহার করুন।</p>
+    <button id="installBtn" class="install" type="button">📲 Install WINBD-PRO</button>
+    <a class="open" href="/">Website খুলুন →</a>
+    <div class="steps">
+      <b>Install button না এলে</b>
+      <ol>
+        <li>Chrome-এ এই page খুলুন।</li>
+        <li>উপরের ⋮ menu চাপুন।</li>
+        <li><strong>Install app</strong> অথবা <strong>Add to Home screen</strong> নির্বাচন করুন।</li>
+      </ol>
+    </div>
+    <div id="status" class="status"></div>
+  </main>
+<script>
+let deferredPrompt=null;
+const installBtn=document.getElementById('installBtn');
+const status=document.getElementById('status');
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}
+
+window.addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  deferredPrompt=event;
+  installBtn.hidden=false;
+});
+
+window.addEventListener('appinstalled',()=>{
+  deferredPrompt=null;
+  installBtn.hidden=true;
+  status.textContent='WINBD-PRO install হয়েছে। Home Screen থেকে খুলতে পারবেন।';
+});
+
+installBtn.addEventListener('click',async()=>{
+  if(!deferredPrompt){
+    status.textContent='Chrome menu থেকে “Install app” বা “Add to Home screen” নির্বাচন করুন।';
+    return;
+  }
+  deferredPrompt.prompt();
+  const choice=await deferredPrompt.userChoice;
+  deferredPrompt=null;
+  if(choice.outcome==='accepted') status.textContent='Install শুরু হয়েছে…';
+});
+</script>
+</body>
+</html>

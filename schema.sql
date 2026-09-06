@@ -1,0 +1,80 @@
+-- WINBD-PRO canonical schema
+-- This file mirrors the backend/sql migrations so the Admin Panel's
+-- "remote database" instructions have a single, obvious schema file.
+-- Existing deployments should continue using `npm run migrate`.
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username VARCHAR(64) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE,
+  phone VARCHAR(32) UNIQUE,
+  password_hash TEXT NOT NULL,
+  full_name VARCHAR(160),
+  currency VARCHAR(8) NOT NULL DEFAULT 'BDT',
+  status VARCHAR(24) NOT NULL DEFAULT 'active',
+  role VARCHAR(24) NOT NULL DEFAULT 'player',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT users_role_chk CHECK (role IN ('player','admin','superadmin')),
+  CONSTRAINT users_status_chk CHECK (status IN ('active','suspended','blocked'))
+);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS wallets (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  balance NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (balance >= 0),
+  locked_balance NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (locked_balance >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS wallet_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(32) NOT NULL,
+  amount NUMERIC(18,2) NOT NULL,
+  balance_after NUMERIC(18,2) NOT NULL,
+  reference VARCHAR(128),
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS payment_intents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  direction VARCHAR(16) NOT NULL CHECK (direction IN ('deposit','withdrawal')),
+  amount NUMERIC(18,2) NOT NULL CHECK (amount > 0),
+  method VARCHAR(32) NOT NULL,
+  status VARCHAR(24) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','cancelled')),
+  provider_reference VARCHAR(128),
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  action VARCHAR(80) NOT NULL,
+  ip VARCHAR(64),
+  user_agent TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_role_status ON users(role,status);
+CREATE INDEX IF NOT EXISTS idx_users_username_lower ON users(lower(username));
+CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(lower(email));
+CREATE INDEX IF NOT EXISTS idx_wallet_ledger_user_created ON wallet_ledger(user_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_intents_user_created ON payment_intents(user_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_intents_status_created ON payment_intents(status,created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_created ON audit_logs(user_id,created_at DESC);
