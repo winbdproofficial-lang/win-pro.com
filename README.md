@@ -36,3 +36,8 @@ npm run create-admin -- admin "CHANGE_THIS_TO_A_STRONG_PASSWORD" admin@example.c
 ```
 
 Payment integration remains provider-neutral until the licensed provider and its official server-side API/webhook details are configured.
+## Game catalogue
+
+The Render backend exposes `/api/bt/v1/provider/getWebsiteCategory`. When provider credentials are configured and a provider returns games, the frontend shows the live provider catalogue. When no provider catalogue is available yet, the backend returns a local preview catalogue so the Games page is populated and can be styled/tested before API onboarding. Preview entries never call a provider launch endpoint.
+
+Configure provider secrets in Render Environment Variables using the names in `backend/.env.example`. Do not commit API tokens, agent IDs, or secret keys to Git.

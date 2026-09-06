@@ -1,28 +1,196 @@
-(()=>{const $=id=>document.getElementById(id);let games=[],vendor='all',category='all';const api=async(p,o={})=>{const h={'Content-Type':'application/json',...(o.headers||{})},t=localStorage.getItem('winbd_access');if(t)h.Authorization=`Bearer ${t}`;const r=await fetch(p,{...o,headers:h}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'Provider API request failed');return d};function flat(x,out=[],parent='HOT GAME'){if(!x)return out;if(Array.isArray(x)){x.forEach(v=>flat(v,out,parent));return out}if(typeof x!=='object')return out;const c=x.content;if(c?.gameCode&&c?.vendorCode)out.push({name:x.displayName||c.gameCode,category:parent,vendorCode:c.vendorCode,vendorId:c.vendorId,gameCode:c.gameCode,gameTypeId:c.gameTypeId,extraData:c.extraData??null,hasTrialPlay:!!c.hasTrialPlay,image:x.customizeData?.darkIcon||x.customizeData?.lightIcon||''});const p=x.displayName||parent;if(x.subCategories)flat(x.subCategories,out,p);return out}function uniq(a){const s=new Set;return a.filter(g=>{const k=g.vendorCode+'|'+g.gameCode;if(s.has(k))return false;s.add(k);return true})}function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c))}function render(){const q=($('gameSearch')?.value||'').toLowerCase(),list=games.filter(g=>(vendor==='all'||g.vendorCode===vendor)&&(category==='all'||g.category===category)&&(`${g.name} ${g.vendorCode} ${g.category}`.toLowerCase().includes(q)));const card=g=>`<article class="game-tile"><div class="tile-art game-provider" style="${g.image?`background-image:url('${g.image}');background-size:cover;background-position:center`:''}">${g.image?'':'🎮'}</div><span class="provider-label">${esc(g.vendorCode)}</span><h3>${esc(g.name)}</h3><p>${esc(g.category)}</p><button class="primary" onclick='${g.fallback?"window.winbdPreviewGame("+JSON.stringify(g)+")":"window.winbdLaunchGame("+JSON.stringify(g)+")"}'>${g.fallback?'API যুক্ত হলে খেলুন':'এখন খেলুন'}</button>${g.hasTrialPlay?`<button class="ghost" onclick='window.winbdLaunchTrial(${JSON.stringify(g)})'>ট্রায়াল</button>`:''}</article>`;if($('gameGrid'))$('gameGrid').innerHTML=list.length?list.map(card).join(''):'<div class="card"><h3>কোনো গেম পাওয়া যায়নি</h3><p>গেম সার্ভিস বর্তমানে প্রস্তুত করা হচ্ছে।</p></div>';if($('homeGameGrid'))$('homeGameGrid').innerHTML=list.slice(0,10).map(card).join('');const h=document.querySelector('#games .section-head h2');if(h)h.innerHTML=`গেম ক্যাটাগরি <span class="game-count">(${list.length})</span>`}function rails(){const r=$('providerRail');if(r){const vs=['all',...new Set(games.map(g=>g.vendorCode))];r.innerHTML=vs.map(v=>`<button class="${v===vendor?'active':''}" onclick="winbdSetVendor('${esc(v)}')">${v==='all'?'সব Vendor':esc(v)}</button>`).join('')}const tb=document.querySelector('#games .game-toolbar');if(tb){let r2=$('providerCategories');if(!r2){r2=document.createElement('div');r2.id='providerCategories';r2.className='provider-rail';tb.after(r2)}const cs=['all',...new Set(games.map(g=>g.category))];r2.innerHTML=cs.slice(0,30).map(c=>`<button class="${c===category?'active':''}" onclick='winbdSetCategory(${JSON.stringify(c)})'>${c==='all'?'সব Category':esc(c)}</button>`).join('')}}const FALLBACK_GAMES=[
-{name:'Super Ace',category:'HOT GAME',vendorCode:'PGSoft',vendorId:null,gameCode:'SUPER_ACE',gameTypeId:'Slots',extraData:null,hasTrialPlay:false,image:'games/game-1.jpg',fallback:true},
-{name:'Wild Athena Rising 2048',category:'HOT GAME',vendorCode:'PGSoft',vendorId:null,gameCode:'WILD_ATHENA_2048',gameTypeId:'Slots',extraData:null,hasTrialPlay:false,image:'games/game-2.jpg',fallback:true},
-{name:'FlyX',category:'HOT GAME',vendorCode:'JILI',vendorId:null,gameCode:'FLYX',gameTypeId:'Arcade',extraData:null,hasTrialPlay:false,image:'games/game-1.jpg',fallback:true},
-{name:'Super Elements',category:'HOT GAME',vendorCode:'JILI',vendorId:null,gameCode:'SUPER_ELEMENTS',gameTypeId:'Slots',extraData:null,hasTrialPlay:false,image:'games/game-2.jpg',fallback:true},
-{name:'Magic Ace Wild Lock',category:'HOT GAME',vendorCode:'JILI',vendorId:null,gameCode:'MAGIC_ACE',gameTypeId:'Slots',extraData:null,hasTrialPlay:false,image:'games/game-1.jpg',fallback:true},
-{name:'Aviator',category:'Crash',vendorCode:'SPRIBE',vendorId:null,gameCode:'AVIATOR',gameTypeId:'Crash',extraData:null,hasTrialPlay:false,image:'games/game-2.jpg',fallback:true},
-{name:'Wild Bounty Showdown',category:'Slots',vendorCode:'PGSoft',vendorId:null,gameCode:'WILD_BOUNTY',gameTypeId:'Slots',extraData:null,hasTrialPlay:false,image:'games/game-1.jpg',fallback:true},
-{name:'Pirate Legends',category:'Slots',vendorCode:'JILI',vendorId:null,gameCode:'PIRATE_LEGENDS',gameTypeId:'Slots',extraData:null,hasTrialPlay:false,image:'games/game-2.jpg',fallback:true},
-{name:'Mighty Sevens',category:'Slots',vendorCode:'PGSoft',vendorId:null,gameCode:'MIGHTY_SEVENS',gameTypeId:'Slots',extraData:null,hasTrialPlay:false,image:'games/game-1.jpg',fallback:true},
-{name:'Fortune Gems 3',category:'Slots',vendorCode:'PGSoft',vendorId:null,gameCode:'FORTUNE_GEMS_3',gameTypeId:'Slots',extraData:null,hasTrialPlay:false,image:'games/game-2.jpg',fallback:true},
-{name:'Live Roulette',category:'Live Casino',vendorCode:'EVOLUTION',vendorId:null,gameCode:'LIVE_ROULETTE',gameTypeId:'Live Casino',extraData:null,hasTrialPlay:false,image:'games/game-1.jpg',fallback:true},
-{name:'Fishing War',category:'Fishing',vendorCode:'JILI',vendorId:null,gameCode:'FISHING_WAR',gameTypeId:'Fishing',extraData:null,hasTrialPlay:false,image:'games/game-2.jpg',fallback:true}
-];
-async function load(){
-try{
- const d=await api('/api/bt/v1/provider/getWebsiteCategory');
- const live=uniq(flat(d.data||d));
- games=live.length?live:FALLBACK_GAMES;
- rails(); render();
- const h=$('health');
- if(h)h.textContent=live.length?'Provider Connected':'Preview catalogue — API not connected';
-}catch(e){
- console.warn(e); games=FALLBACK_GAMES; rails(); render();
- const h=$('health'); if(h)h.textContent='Preview catalogue — API not connected';
-}}
-async function launch(g,trial){if(!localStorage.getItem('winbd_access')){openModal('login');toast('গেম চালাতে আগে লগইন করুন');return}try{const d=await api(trial?'/api/bt/v1/provider/getTrailGameUrl':'/api/bt/v1/provider/getGameUrl',{method:'POST',body:JSON.stringify({gameTypeId:g.gameTypeId,vendorCode:g.vendorCode,gameCode:g.gameCode,extraData:g.extraData,gameImagePath:g.image,loaderImgStyle:'default',vendorName:g.vendorCode,hasTrialPlay:g.hasTrialPlay,isDesktop:true})}),x=d.data||d;if(x?.gameUrl){const w=open(x.gameUrl,'_blank','noopener,noreferrer');if(!w)location.href=x.gameUrl}else if(x?.htmlData){const b=new Blob([x.htmlData],{type:'text/html'});open(URL.createObjectURL(b),'_blank','noopener,noreferrer')}else toast(d.message||'Game service is temporarily unavailable. Please try again later.')}catch(e){toast(e.message||'Game service is temporarily unavailable')}}window.winbdPreviewGame=g=>toast('এই গেমটি এখন preview হিসেবে দেখানো হচ্ছে। Provider API বসালে এখান থেকেই game launch হবে');
-window.winbdSetVendor=v=>{vendor=v;rails();render()};window.winbdSetCategory=c=>{category=c;rails();render()};window.winbdLaunchGame=g=>launch(g,false);window.winbdLaunchTrial=g=>launch(g,true);const oldR=window.renderGames,oldH=window.renderHomeGames;window.renderGames=()=>games.length?render():oldR?.();window.renderHomeGames=()=>games.length?render():oldH?.();window.setGameFilter=v=>{category=v==='all'?'all':v;show('games');render()};window.load=load;load()})();
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let games = [];
+  let vendor = 'all';
+  let category = 'all';
+  let keyword = '';
+
+  const apiJson = async (path, options = {}) => {
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    const token = localStorage.getItem('winbd_access');
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(path, { ...options, headers });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || 'Game service request failed');
+    return data;
+  };
+
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+
+  const gameMatches = (game) => {
+    const q = keyword.trim().toLowerCase();
+    return (
+      (vendor === 'all' || game.vendorCode === vendor) &&
+      (category === 'all' || game.category === category) &&
+      (!q || `${game.name} ${game.vendorCode} ${game.category}`.toLowerCase().includes(q))
+    );
+  };
+
+  const card = (game) => {
+    const image = game.image || '';
+    const action = game.fallback ? `window.winbdPreviewGame(${JSON.stringify(game)})` : `window.winbdLaunchGame(${JSON.stringify(game)})`;
+    const buttonText = game.fallback ? 'API যুক্ত হলে খেলুন' : 'এখন খেলুন';
+    return `
+      <article class="game-tile${game.fallback ? ' game-preview' : ''}">
+        <div class="tile-art game-provider">
+          ${image ? `<img src="${esc(image)}" alt="${esc(game.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.classList.add('image-failed')">` : '<span>🎮</span>'}
+          <span class="game-badge">${game.fallback ? 'PREVIEW' : 'LIVE'}</span>
+          <button class="favorite-btn" type="button" aria-label="Favorite">♡</button>
+        </div>
+        <span class="provider-label">${esc(game.vendorCode)}</span>
+        <h3 title="${esc(game.name)}">${esc(game.name)}</h3>
+        <p>${esc(game.category)}</p>
+        <button class="primary game-action" onclick='${action}'>${buttonText}</button>
+        ${game.hasTrialPlay && !game.fallback ? `<button class="ghost game-action" onclick='window.winbdLaunchTrial(${JSON.stringify(game)})'>ট্রায়াল</button>` : ''}
+      </article>`;
+  };
+
+  function render() {
+    const list = games.filter(gameMatches);
+    if ($('gameGrid')) {
+      $('gameGrid').innerHTML = list.length
+        ? list.map(card).join('')
+        : '<div class="card"><h3>কোনো গেম পাওয়া যায়নি</h3><p>অন্য provider, category বা search চেষ্টা করুন।</p></div>';
+    }
+    if ($('homeGameGrid')) {
+      $('homeGameGrid').innerHTML = list.slice(0, 10).map(card).join('');
+    }
+    const heading = document.querySelector('#games .section-head h2');
+    if (heading) heading.innerHTML = `গেম ক্যাটাগরি <span class="game-count">(${list.length})</span>`;
+    const count = $('gameResultCount');
+    if (count) count.textContent = `${list.length} games`;
+  }
+
+  function renderRails() {
+    const providerRail = $('providerRail');
+    if (providerRail) {
+      const vendors = ['all', ...new Set(games.map((game) => game.vendorCode).filter(Boolean))];
+      providerRail.innerHTML = vendors.map((value) => `
+        <button class="${value === vendor ? 'active' : ''}" onclick='winbdSetVendor(${JSON.stringify(value)})'>
+          ${value === 'all' ? 'সব Provider' : esc(value)}
+        </button>`).join('');
+    }
+
+    const categoryRail = $('providerCategories');
+    if (categoryRail) {
+      const categories = ['all', ...new Set(games.map((game) => game.category).filter(Boolean))];
+      categoryRail.innerHTML = categories.slice(0, 32).map((value) => `
+        <button class="${value === category ? 'active' : ''}" onclick='winbdSetCategory(${JSON.stringify(value)})'>
+          ${value === 'all' ? 'সব Category' : esc(value)}
+        </button>`).join('');
+    }
+  }
+
+  async function load() {
+    try {
+      const data = await apiJson('/api/bt/v1/provider/getWebsiteCategory');
+      games = Array.isArray(data.data) ? data.data : [];
+      renderRails();
+      render();
+      const health = $('health');
+      if (health) health.textContent = data.providerAvailable ? `Provider Connected · ${games.length} games` : `Preview catalogue · ${games.length} games`;
+      const status = $('gameServiceStatus');
+      if (status) {
+        status.textContent = data.providerAvailable
+          ? `Provider catalogue live · ${games.length} games`
+          : `Preview catalogue ready · ${games.length} games · API পরে বসালেই live games আসবে`;
+      }
+    } catch (error) {
+      console.warn(error);
+      games = [];
+      renderRails();
+      render();
+      const health = $('health');
+      if (health) health.textContent = 'Game service unavailable';
+      const status = $('gameServiceStatus');
+      if (status) status.textContent = 'Game service সাময়িকভাবে unavailable';
+    }
+  }
+
+  async function launch(game, trial = false) {
+    if (game.fallback) {
+      window.winbdPreviewGame(game);
+      return;
+    }
+    if (!localStorage.getItem('winbd_access')) {
+      openModal('login');
+      toast('গেম চালাতে আগে লগইন করুন');
+      return;
+    }
+    try {
+      const data = await apiJson(trial ? '/api/bt/v1/provider/getTrailGameUrl' : '/api/bt/v1/provider/getGameUrl', {
+        method: 'POST',
+        body: JSON.stringify({
+          gameTypeId: game.gameTypeId,
+          vendorCode: game.vendorCode,
+          gameCode: game.gameCode,
+          extraData: game.extraData,
+          gameImagePath: game.image,
+          vendorName: game.vendorCode,
+          hasTrialPlay: game.hasTrialPlay,
+          isDesktop: window.innerWidth > 768,
+          returnUrl: location.origin + location.pathname,
+          source: game.source || 'provider',
+        }),
+      });
+      const result = data.data || data;
+      if (result?.gameUrl) {
+        const popup = window.open(result.gameUrl, '_blank', 'noopener,noreferrer');
+        if (!popup) location.href = result.gameUrl;
+      } else if (result?.htmlData) {
+        const blob = new Blob([result.htmlData], { type: 'text/html' });
+        window.open(URL.createObjectURL(blob), '_blank', 'noopener,noreferrer');
+      } else {
+        toast(data.message || 'Game service is temporarily unavailable.');
+      }
+    } catch (error) {
+      toast(error.message || 'Game service is temporarily unavailable');
+    }
+  }
+
+  window.winbdPreviewGame = (game) => {
+    toast(`${game.name}: preview card ready — Provider API configure হলে এখান থেকেই real launch হবে`);
+  };
+  window.winbdSetVendor = (value) => { vendor = value; renderRails(); render(); };
+  window.winbdSetCategory = (value) => { category = value; renderRails(); render(); };
+  window.winbdLaunchGame = (game) => launch(game, false);
+  window.winbdLaunchTrial = (game) => launch(game, true);
+  window.renderGames = () => render();
+  window.renderHomeGames = () => render();
+  window.setGameFilter = (value) => {
+    const values = games.map((game) => game.vendorCode);
+    if (values.includes(value)) {
+      vendor = value;
+      category = 'all';
+      keyword = '';
+    } else if (value === 'all') {
+      vendor = 'all';
+      category = 'all';
+      keyword = '';
+    } else if (value === 'Super Ace') {
+      vendor = 'all';
+      category = 'all';
+      keyword = 'Super Ace';
+    } else {
+      vendor = 'all';
+      category = value;
+      keyword = '';
+    }
+    show('games');
+    renderRails();
+    render();
+  };
+
+  const originalSearch = $('gameSearch');
+  if (originalSearch) {
+    originalSearch.addEventListener('input', () => {
+      keyword = originalSearch.value || '';
+      render();
+    });
+  }
+
+  window.loadProviderGames = load;
+  load();
+})();

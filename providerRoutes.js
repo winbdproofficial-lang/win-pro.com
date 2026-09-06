@@ -1,6 +1,7 @@
 'use strict';
 const express = require('express');
 const ProviderAdapter = require('./providerAdapter');
+const localGameCatalog = require('./localGameCatalog');
 
 function setupProviderRoutes(app, options = {}) {
   const router = express.Router();
@@ -13,18 +14,17 @@ function setupProviderRoutes(app, options = {}) {
     const vendorCode = raw.vendorCode || raw.vendor_code || raw.vendorId || raw.vendor_id || raw.provider || raw.vendor || 'PGSoft';
     if (gameCode === undefined || gameCode === null || gameCode === '') return null;
     return {
-      displayName: raw.name || raw.gameName || raw.game_name || raw.displayName || String(gameCode),
-      content: {
-        gameCode,
-        vendorCode,
-        vendorId: raw.vendorId || raw.vendor_id || raw.vendorid || null,
-        gameTypeId: raw.gameTypeId || raw.game_type_id || raw.type || categoryHint || 'Slots',
-        extraData: raw.extraData || raw.extra_data || null,
-        hasTrialPlay: Boolean(raw.hasTrialPlay ?? raw.has_trial_play ?? raw.demo ?? false)
-      },
-      customizeData: {
-        lightIcon: raw.image || raw.icon || raw.thumbnail || raw.imageUrl || raw.image_url || raw.iconurl || raw.iconurl1 || raw.iconurl2 || ''
-      }
+      name: raw.name || raw.gameName || raw.game_name || raw.displayName || String(gameCode),
+      category: raw.category || raw.gameCategory || raw.game_type || categoryHint || raw.type || raw.gameTypeId || 'Slots',
+      vendorCode,
+      vendorId: raw.vendorId || raw.vendor_id || raw.vendorid || null,
+      gameCode,
+      gameTypeId: raw.gameTypeId || raw.game_type_id || raw.type || categoryHint || 'Slots',
+      extraData: raw.extraData || raw.extra_data || null,
+      hasTrialPlay: Boolean(raw.hasTrialPlay ?? raw.has_trial_play ?? raw.demo ?? false),
+      image: raw.image || raw.icon || raw.thumbnail || raw.imageUrl || raw.image_url || raw.iconurl || raw.iconurl1 || raw.iconurl2 || '',
+      fallback: false,
+      source: 'provider',
     };
   }
 
@@ -36,28 +36,39 @@ function setupProviderRoutes(app, options = {}) {
   router.get('/getWebsiteCategory', async (req, res) => {
     try {
       const result = await adapter.listGames();
-      const data = normalizeCatalogue(result);
-      return res.json({ success: true, providerAvailable: data.length > 0, data });
+      const live = normalizeCatalogue(result);
+      const data = live.length ? live : localGameCatalog;
+      return res.json({
+        success: true,
+        providerAvailable: live.length > 0,
+        source: live.length ? 'provider' : 'local-catalog',
+        data,
+        count: data.length,
+      });
     } catch (err) {
       console.error('[provider] getWebsiteCategory failed:', err);
-      return res.json({ success: true, providerAvailable: false, data: [] });
+      return res.json({
+        success: true,
+        providerAvailable: false,
+        source: 'local-catalog',
+        data: localGameCatalog,
+        count: localGameCatalog.length,
+      });
     }
+  });
+
+  router.get('/catalog', (req, res) => {
+    res.json({ success: true, providerAvailable: false, source: 'local-catalog', data: localGameCatalog, count: localGameCatalog.length });
   });
 
   router.post('/getGameUrl', launchMiddleware, async (req, res) => {
     try {
       const { gameCode, vendorCode, gameTypeId, extraData } = req.body || {};
-      // GitSlotPark requires an alphanumeric userID (4–48 chars). JWT already
-      // contains the stable username, so prefer it over the internal UUID.
       const userId = req.user?.username || req.user?.sub || req.body.userId;
-      const launchResult = await adapter.launchGame({
-        gameId: gameCode,
-        vendorCode,
-        gameTypeId,
-        extraData,
-        userId,
-        returnUrl: req.body.returnUrl
-      });
+      if (String(req.body?.source || '') === 'local-catalog') {
+        return res.status(503).json({ success: false, message: 'এই game এখন preview হিসেবে আছে। Provider API configure হলে launch করা যাবে।' });
+      }
+      const launchResult = await adapter.launchGame({ gameId: gameCode, vendorCode, gameTypeId, extraData, userId, returnUrl: req.body.returnUrl });
       return res.json({ success: true, status: '000000', data: { gameUrl: launchResult.url } });
     } catch (err) {
       console.error('[provider] getGameUrl failed:', err);
@@ -68,6 +79,9 @@ function setupProviderRoutes(app, options = {}) {
   router.post('/getTrailGameUrl', async (req, res) => {
     try {
       const { gameCode, vendorCode, gameTypeId, extraData } = req.body || {};
+      if (String(req.body?.source || '') === 'local-catalog') {
+        return res.status(503).json({ success: false, message: 'এই game এখন preview হিসেবে আছে। Provider API configure হলে trial launch করা যাবে।' });
+      }
       const launchResult = await adapter.launchGame({
         gameId: gameCode,
         vendorCode,
@@ -75,7 +89,7 @@ function setupProviderRoutes(app, options = {}) {
         extraData,
         userId: req.user?.username || req.body.userId || 'guest',
         trial: true,
-        returnUrl: req.body.returnUrl
+        returnUrl: req.body.returnUrl,
       });
       return res.json({ success: true, status: '000000', data: { gameUrl: launchResult.url } });
     } catch (err) {
@@ -84,13 +98,8 @@ function setupProviderRoutes(app, options = {}) {
     }
   });
 
-  router.post('/callback', async (req, res) => {
-    return res.json({ status: '000000', message: 'Success' });
-  });
-
-  router.get('/status', (req, res) => {
-    res.json({ success: true, data: adapter.status() });
-  });
+  router.post('/callback', async (req, res) => res.json({ status: '000000', message: 'Success' }));
+  router.get('/status', (req, res) => res.json({ success: true, data: adapter.status(), localCatalogCount: localGameCatalog.length }));
 
   if (app && typeof app.use === 'function') {
     app.use('/api/bt/v1/provider', router);
