@@ -98,12 +98,21 @@ class ProviderAdapter {
         const base = v.baseUrl;
         let response;
 
-        // GitSlotPark and the loginxgamesapi gateway expose gamelist as GET + Bearer.
         if (isBearerGetApi(base)) {
           response = await fetch(`${base}/gamelist`, {
             method: 'GET',
             headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${v.apiToken}` },
           });
+
+          // Some gateway endpoints document GET but reject it at the edge with 405.
+          // Retry the same authenticated endpoint with POST so both gateway variants work.
+          if (response.status === 405) {
+            response = await fetch(`${base}/gamelist`, {
+              method: 'POST',
+              headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${v.apiToken}` },
+              body: JSON.stringify({}),
+            });
+          }
         } else {
           const payload = { agentID: v.agentId, apiToken: v.apiToken, sign: sign(v.secretKey, v.agentId) };
           response = await fetch(`${base}/gamelist`, {
