@@ -1,0 +1,20 @@
+(()=>{
+  // WINBD-PRO virtual-coin game shell. No cash wagering, deposits, withdrawals or redemption.
+  const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]||c));
+  let coin=Math.max(0,Number(localStorage.getItem('winbd_virtual_coins')||10000));
+  let active=null;
+  const save=()=>localStorage.setItem('winbd_virtual_coins',String(Math.floor(coin)));
+  const toastMsg=m=>typeof window.toast==='function'?window.toast(m):alert(m);
+  function ensure(){
+    if(document.getElementById('virtualGameOverlay'))return;
+    const s=document.createElement('style');s.textContent=`#virtualGameOverlay{position:fixed;inset:0;z-index:99999;background:#031d1b;display:none;overflow:auto}.vg-shell{min-height:100%;padding:16px;display:flex;flex-direction:column}.vg-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.vg-title{font-size:20px;font-weight:800}.vg-coins{padding:8px 12px;border-radius:999px;background:#0b625a;color:#d9fffa;font-weight:800}.vg-stage{flex:1;display:grid;place-items:center}.vg-card{width:min(760px,100%);border:1px solid #176c64;border-radius:18px;padding:24px;background:linear-gradient(145deg,#07514b,#042f2c);box-shadow:0 20px 70px #0008;text-align:center}.vg-art{width:min(420px,100%);aspect-ratio:16/9;margin:0 auto 18px;border-radius:14px;background:#063f3a center/cover no-repeat}.vg-controls{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}.vg-controls input{width:130px;padding:10px;border-radius:9px;border:1px solid #257970;background:#062b29;color:#fff}.vg-controls button{padding:10px 16px;border-radius:9px;border:1px solid #257970;background:#0a8176;color:#fff;font-weight:800}.vg-note{opacity:.72;font-size:12px;margin-top:16px}.vg-result{min-height:28px;font-weight:800;margin-top:12px}`;document.head.appendChild(s);
+    const o=document.createElement('div');o.id='virtualGameOverlay';o.innerHTML=`<div class="vg-shell"><div class="vg-top"><button class="ghost" id="vgBack">← গেমস</button><div class="vg-title" id="vgTitle">Game</div><div class="vg-coins">🪙 <span id="vgCoins">0</span></div></div><div class="vg-stage"><div class="vg-card"><div id="vgArt" class="vg-art"></div><h2 id="vgName"></h2><p id="vgProvider" class="muted"></p><div class="vg-controls"><input id="vgBet" type="number" min="1" step="1" value="10"><button id="vgPlay">PLAY</button></div><div id="vgResult" class="vg-result"></div><div class="vg-note">Virtual coins only • No cash value • No deposit/withdrawal/redemption</div></div></div></div>`;document.body.appendChild(o);
+    document.getElementById('vgBack').onclick=close;
+    document.getElementById('vgPlay').onclick=play;
+  }
+  function update(){const e=document.getElementById('vgCoins');if(e)e.textContent=Math.floor(coin).toLocaleString();}
+  function open(g){ensure();active=g;const o=document.getElementById('virtualGameOverlay');o.style.display='block';document.getElementById('vgName').textContent=g.name||'Game';document.getElementById('vgTitle').textContent=g.name||'Game';document.getElementById('vgProvider').textContent=`${g.vendorCode||'Provider'} • ${g.category||'Game'}`;const art=document.getElementById('vgArt');art.style.backgroundImage=g.image?`url("${String(g.image).replace(/"/g,'\\"')}")`:'';document.getElementById('vgResult').textContent='';update();}
+  function close(){const o=document.getElementById('virtualGameOverlay');if(o)o.style.display='none';active=null;}
+  function play(){if(!active)return;const input=document.getElementById('vgBet');const bet=Math.floor(Number(input.value)||0);if(bet<1)return toastMsg('কমপক্ষে ১ virtual coin দিন');if(bet>coin)return toastMsg('Virtual coin balance যথেষ্ট নেই');coin-=bet;const win=Math.random()<0.48;const result=document.getElementById('vgResult');if(win){const reward=bet*2;coin+=reward;result.textContent=`🎉 জিতেছেন +${reward.toLocaleString()} coin`;}else{result.textContent=`Round শেষ • -${bet.toLocaleString()} coin`;}save();update();}
+  window.winbdOpenVirtualGame=open;window.winbdCloseVirtualGame=close;
+})();
